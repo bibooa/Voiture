@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "VéhiTrack",
-    "slug": "garee",
+    "slug": "vehitrack",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "garee",
+    "scheme": "vehitrack",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -18,10 +18,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.garee.app",
+      "bundleIdentifier": "com.vehitrack.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
+        "NSLocationWhenInUseUsageDescription": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur sans votre accord.",
         "UIBackgroundModes": [],
         "ITSAppUsesNonExemptEncryption": false,
         "LSApplicationQueriesSchemes": [
@@ -34,10 +34,18 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0A0E1A"
       },
-      "package": "com.garee.app",
+      "package": "com.vehitrack.app",
+      "versionCode": 1,
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
+      ],
+      "blockedPermissions": [
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "web": {
@@ -50,7 +58,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture."
+          "locationWhenInUsePermission": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
         }
       ],
       [
