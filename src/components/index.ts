@@ -13,6 +13,7 @@ export { SegmentedControl } from './SegmentedControl';
 export { SaveConfirmation } from './SaveConfirmation';
 export { GpsSearchingOverlay } from './GpsSearchingOverlay';
 export { DirectionArrow } from './DirectionArrow';
+export { GuidanceScene } from './GuidanceScene';
 export { ScreenContainer } from './ScreenContainer';
 export { EmptyState } from './EmptyState';
 export { SettingsRow } from './SettingsRow';
