@@ -11,11 +11,15 @@
 
 export type GpsQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
 
-/** Upper bounds (inclusive, metres) of each tier. Above `fair` is `poor`. */
+/**
+ * Upper bounds (inclusive, metres) of each tier. Above `fair` is `poor`.
+ * The tier is only ever shown NEXT TO the real value (e.g. "±9 m · BONNE"),
+ * never instead of it.
+ */
 export const QUALITY_THRESHOLDS = {
-  excellent: 4,
-  good: 8,
-  fair: 15,
+  excellent: 5,
+  good: 10,
+  fair: 20,
 } as const;
 
 /** Accuracy (m) worse than this is considered unusable for saving a car. */
@@ -24,11 +28,11 @@ export const MAX_USABLE_ACCURACY = 100;
 export type QualityTone = 'success' | 'warning' | 'danger' | 'muted';
 
 export const QUALITY_META: Record<GpsQuality, { short: string; label: string; tone: QualityTone }> = {
-  excellent: { short: 'GPS EXCELLENT', label: 'Excellente précision', tone: 'success' },
-  good: { short: 'GPS BON', label: 'Bonne précision', tone: 'success' },
-  fair: { short: 'GPS MOYEN', label: 'Précision moyenne', tone: 'warning' },
-  poor: { short: 'GPS FAIBLE', label: 'Précision faible', tone: 'danger' },
-  unknown: { short: 'GPS INCONNU', label: 'Précision inconnue', tone: 'muted' },
+  excellent: { short: 'EXCELLENTE', label: 'Excellente précision', tone: 'success' },
+  good: { short: 'BONNE', label: 'Bonne précision', tone: 'success' },
+  fair: { short: 'MOYENNE', label: 'Précision moyenne', tone: 'warning' },
+  poor: { short: 'FAIBLE', label: 'Précision faible', tone: 'danger' },
+  unknown: { short: 'INCONNUE', label: 'Précision inconnue', tone: 'muted' },
 };
 
 export function gpsQuality(accuracy: number | null | undefined): GpsQuality {

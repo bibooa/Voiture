@@ -4,7 +4,8 @@ import MapView, { Marker, Polyline, Circle, type Region, type MapType } from 're
 import { useTheme } from '@/theme';
 import { CarMarker, UserMarker, HeadingCone } from './markers';
 import { mapDarkStyle } from '@/theme/mapStyle';
-import type { LatLng } from '@/utils/geo';
+import { distanceMeters, offsetMeters, type LatLng } from '@/utils/geo';
+import { framingHalfSpan } from '@/location/framing';
 import type { LiveFix, ParkedLocation } from '@/types';
 
 export type { LatLng };
@@ -20,7 +21,7 @@ export type MapCanvasHandle = {
 type Props = {
   user: LiveFix | null;
   car: ParkedLocation | null;
-  /** Small label over the car pin (e.g. "125 m"). */
+  /** Estimated distance shown under the car marker (e.g. "≈ 12 m"). */
   carLabel?: string;
   /** Compass heading to draw the view cone (null = no cone). */
   heading?: number | null;
@@ -36,7 +37,10 @@ type Props = {
   rotateWithHeading?: boolean;
   /** Reports the camera heading so a compass control can reflect it. */
   onCameraHeading?: (deg: number) => void;
+  /** Reports metres per screen point, for a scale bar. */
+  onScale?: (metersPerPoint: number) => void;
 };
+
 
 const FALLBACK: Region = { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.02, longitudeDelta: 0.02 };
 
@@ -58,6 +62,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
     onFollowChange,
     rotateWithHeading = false,
     onCameraHeading,
+    onScale,
   },
   ref
 ) {
@@ -100,18 +105,33 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
     }
   };
 
+  /**
+   * Frame user + car + route, but never tighter than a box that keeps the
+   * accuracy circles in proportion (so ±12 m does not fill the whole screen
+   * when the car is 2 m away) and leaves some street context around.
+   */
   const fitAll = () => {
-    const pts: LatLng[] = [];
-    if (user) pts.push(user);
-    if (car) pts.push(car);
-    if (route && route.length > 1) pts.push(...route);
-    if (pts.length === 0) return;
-    if (pts.length === 1) {
-      mapRef.current?.animateCamera({ center: pts[0], zoom: 17, heading: 0 }, { duration: 450 });
-      return;
-    }
+    const anchors: LatLng[] = [];
+    if (user) anchors.push(user);
+    if (car) anchors.push(car);
+    if (anchors.length === 0) return;
+    const mid: LatLng =
+      anchors.length === 2
+        ? { latitude: (anchors[0].latitude + anchors[1].latitude) / 2, longitude: (anchors[0].longitude + anchors[1].longitude) / 2 }
+        : anchors[0];
+    const span = anchors.length === 2 ? distanceMeters(anchors[0], anchors[1]) : 0;
+    const maxAcc = Math.max(user?.accuracy ?? 0, car?.accuracy ?? 0);
+    const half = framingHalfSpan(span, maxAcc);
+    const pts: LatLng[] = [
+      ...anchors,
+      offsetMeters(mid, -half, -half),
+      offsetMeters(mid, half, half),
+      ...(route && route.length > 1 ? route : []),
+    ];
     mapRef.current?.fitToCoordinates(pts, { edgePadding: edge, animated: true });
   };
+
+  const [widthPts, setWidthPts] = useState(0);
 
   useImperativeHandle(ref, () => ({
     fitAll,
@@ -195,7 +215,13 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       rotateEnabled
       pitchEnabled={false}
       onPanDrag={() => follow && onFollowChange?.(false)}
-      onRegionChangeComplete={async () => {
+      onLayout={(e) => setWidthPts(e.nativeEvent.layout.width)}
+      maxZoomLevel={19.5}
+      onRegionChangeComplete={async (region) => {
+        if (widthPts > 0 && onScale) {
+          const mPerDegLng = 111320 * Math.cos((region.latitude * Math.PI) / 180);
+          onScale((region.longitudeDelta * mPerDegLng) / widthPts);
+        }
         const cam = await mapRef.current?.getCamera();
         if (cam?.heading != null) {
           setCamHeading(cam.heading);
@@ -208,8 +234,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
         <Circle
           center={car}
           radius={car.accuracy}
-          strokeColor={t.colors.car + '99'}
-          fillColor={t.colors.car + '1F'}
+          strokeColor={t.colors.car + '5C'}
+          fillColor={t.colors.car + '12'}
           strokeWidth={1}
         />
       ) : null}
@@ -219,8 +245,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
         <Circle
           center={user}
           radius={user.accuracy}
-          strokeColor={t.colors.primary + '99'}
-          fillColor={t.colors.primary + '1F'}
+          strokeColor={t.colors.primary + '5C'}
+          fillColor={t.colors.primary + '14'}
           strokeWidth={1}
         />
       ) : null}
@@ -233,9 +259,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       ) : user && car ? (
         <Polyline
           coordinates={[user, car]}
-          strokeColor={t.colors.textSecondary}
-          strokeWidth={2}
-          lineDashPattern={[6, 8]}
+          strokeColor={t.colors.primary + 'B3'}
+          strokeWidth={2.5}
+          lineDashPattern={[2, 7]}
+          lineCap="round"
         />
       ) : null}
 
@@ -263,8 +290,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       ) : null}
 
       {car ? (
-        <Marker coordinate={car} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={tracks} title="Votre voiture">
-          <CarMarker label={carLabel} />
+        <Marker coordinate={car} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracks} title="Votre voiture">
+          <CarMarker distance={carLabel} />
         </Marker>
       ) : null}
     </MapView>

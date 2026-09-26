@@ -7,7 +7,8 @@ import { GlassCard } from './GlassCard';
 import { Icon } from './Icon';
 import { formatAccuracy, gpsQuality, QUALITY_META, QUALITY_THRESHOLDS, type GpsQuality, type QualityTone } from '@/location/quality';
 
-export type GpsFreshness = 'live' | 'stale' | 'lost' | 'none';
+export type { Freshness as GpsFreshness } from '@/location/presentation';
+import type { Freshness as GpsFreshness } from '@/location/presentation';
 
 export function toneColor(t: Theme, tone: QualityTone): string {
   return tone === 'success'
@@ -33,8 +34,8 @@ type Props = {
 };
 
 /**
- * The one GPS quality indicator used everywhere: coloured dot + tier + "±N m".
- * Tapping it explains where GPS accuracy comes from and what degrades it.
+ * The one GPS indicator used everywhere: "● GPS · ±9 m". The dot colour gives
+ * the tier; the real value is always shown. Tapping it explains GPS accuracy.
  */
 export function GpsBadge({ accuracy, freshness = 'live', style, small }: Props) {
   const t = useTheme();
@@ -42,20 +43,15 @@ export function GpsBadge({ accuracy, freshness = 'live', style, small }: Props) 
 
   const q = gpsQuality(accuracy);
   let color = qualityColor(t, q);
-  let label = QUALITY_META[q].short;
-  let value: string | null = formatAccuracy(accuracy);
-
+  let value = formatAccuracy(accuracy);
   if (freshness === 'none') {
     color = t.colors.textMuted;
-    label = 'RECHERCHE GPS…';
-    value = null;
+    value = 'recherche…';
   } else if (freshness === 'lost') {
     color = t.colors.danger;
-    label = 'SIGNAL PERDU';
-    value = null;
+    value = 'signal perdu';
   } else if (freshness === 'stale') {
     color = t.colors.warning;
-    label = 'GPS EN ATTENTE';
   }
 
   return (
@@ -63,7 +59,7 @@ export function GpsBadge({ accuracy, freshness = 'live', style, small }: Props) 
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel={`${label} ${value ?? ''}. Appuyer pour en savoir plus.`}
+        accessibilityLabel={`GPS ${value}, ${QUALITY_META[q].label}. Appuyer pour en savoir plus.`}
         hitSlop={6}
       >
         <View
@@ -75,14 +71,12 @@ export function GpsBadge({ accuracy, freshness = 'live', style, small }: Props) 
           ]}
         >
           <View style={[styles.dot, { backgroundColor: color }]} />
-          <AppText variant="label" style={{ fontSize: small ? 9 : 10, letterSpacing: 0.5 }} color={color}>
-            {label}
+          <AppText variant="caption" weight="semibold" tone="secondary" style={{ fontSize: small ? 12 : 13 }}>
+            GPS ·{' '}
           </AppText>
-          {value ? (
-            <AppText variant="caption" weight="bold" style={{ marginLeft: 6, fontSize: small ? 12 : 13 }}>
-              {value}
-            </AppText>
-          ) : null}
+          <AppText variant="caption" weight="bold" style={{ fontSize: small ? 12 : 13 }}>
+            {value}
+          </AppText>
         </View>
       </Pressable>
       <GpsInfoModal visible={open} onClose={() => setOpen(false)} />
@@ -91,10 +85,10 @@ export function GpsBadge({ accuracy, freshness = 'live', style, small }: Props) 
 }
 
 const LEGEND: { q: GpsQuality; range: string }[] = [
-  { q: 'excellent', range: `≤ ${QUALITY_THRESHOLDS.excellent} m` },
-  { q: 'good', range: `≤ ${QUALITY_THRESHOLDS.good} m` },
-  { q: 'fair', range: `≤ ${QUALITY_THRESHOLDS.fair} m` },
-  { q: 'poor', range: `> ${QUALITY_THRESHOLDS.fair} m` },
+  { q: 'excellent', range: `±0 – ${QUALITY_THRESHOLDS.excellent} m` },
+  { q: 'good', range: `±${QUALITY_THRESHOLDS.excellent} – ${QUALITY_THRESHOLDS.good} m` },
+  { q: 'fair', range: `±${QUALITY_THRESHOLDS.good} – ${QUALITY_THRESHOLDS.fair} m` },
+  { q: 'poor', range: `au-delà de ±${QUALITY_THRESHOLDS.fair} m` },
 ];
 
 export function GpsInfoModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {

@@ -9,6 +9,7 @@ export { Pulse } from './Pulse';
 export { CarMarker, UserMarker, HeadingCone, FavoriteMarker } from './markers';
 export { MapCanvas, type MapCanvasHandle, type LatLng } from './MapCanvas';
 export { MapControls } from './MapControls';
+export { ScaleBar } from './ScaleBar';
 export { Toggle } from './Toggle';
 export { SegmentedControl } from './SegmentedControl';
 export { StabilizationOverlay } from './StabilizationOverlay';

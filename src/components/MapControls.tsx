@@ -2,91 +2,114 @@ import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@/theme';
 import { Icon } from './Icon';
-import { AppText } from './AppText';
 import { haptics } from '@/services/haptics';
 
 type Props = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onLocate: () => void;
-  /** Locate button highlighted when the camera follows the user. */
+  /** Locate highlighted when the camera follows the user. */
   following?: boolean;
-  /** Camera heading (deg); the compass rotates to show north. */
+  /** Camera heading (deg): the compass needle always points to north. */
   cameraHeading?: number;
-  onResetNorth?: () => void;
+  /** Tap on the compass (north-up / heading-up toggle, or reset north). */
+  onCompassPress?: () => void;
+  /** Compass highlighted when the map follows the phone's orientation. */
+  headingUp?: boolean;
 };
 
-/** Compact vertical map control column: compass, zoom +/−, locate. */
-export function MapControls({ onZoomIn, onZoomOut, onLocate, following, cameraHeading = 0, onResetNorth }: Props) {
+/** Compact map controls: small compass, zoom +/−, locate. */
+export function MapControls({
+  onZoomIn,
+  onZoomOut,
+  onLocate,
+  following,
+  cameraHeading = 0,
+  onCompassPress,
+  headingUp,
+}: Props) {
   const t = useTheme();
   const surface = { backgroundColor: t.colors.cardScrimStrong, borderColor: t.colors.glassBorder };
 
-  const Btn = ({ onPress, children, label }: { onPress: () => void; children: React.ReactNode; label: string }) => (
-    <Pressable
-      onPress={() => {
-        haptics.selection();
-        onPress();
-      }}
-      style={styles.btn}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      hitSlop={4}
-    >
-      {children}
-    </Pressable>
-  );
-
-  // Deviation from north in (-180, 180]; only show the compass when rotated.
-  const deviation = ((((cameraHeading + 180) % 360) + 360) % 360) - 180;
-  const rotated = Math.abs(deviation) > 3;
+  const tap = (fn?: () => void) => () => {
+    haptics.selection();
+    fn?.();
+  };
 
   return (
     <View style={styles.col}>
-      {rotated && onResetNorth ? (
-        <View style={[styles.single, surface]}>
-          <Btn onPress={onResetNorth} label="Remettre le nord en haut">
-            <View style={{ alignItems: 'center', transform: [{ rotate: `${-cameraHeading}deg` }] }}>
-              <View style={[styles.needle, { borderBottomColor: t.colors.danger }]} />
-              <AppText variant="label" style={{ fontSize: 9 }}>
-                N
-              </AppText>
-            </View>
-          </Btn>
+      <Pressable
+        onPress={tap(onCompassPress)}
+        accessibilityRole="button"
+        accessibilityLabel={headingUp ? 'Carte orientée selon le téléphone. Appuyer pour le nord en haut.' : 'Boussole'}
+        hitSlop={6}
+        style={[styles.compass, surface, headingUp && { borderColor: t.colors.primary }]}
+      >
+        <View style={{ alignItems: 'center', transform: [{ rotate: `${-cameraHeading}deg` }] }}>
+          <View style={[styles.needleN, { borderBottomColor: t.colors.danger }]} />
+          <View style={[styles.needleS, { borderTopColor: t.colors.textMuted }]} />
         </View>
-      ) : null}
+      </Pressable>
 
       <View style={[styles.group, surface]}>
-        <Btn onPress={onZoomIn} label="Zoomer">
-          <Icon name="add" size={22} color={t.colors.text} />
-        </Btn>
+        <Pressable onPress={tap(onZoomIn)} style={styles.btn} accessibilityLabel="Zoomer" hitSlop={4}>
+          <Icon name="add" size={20} color={t.colors.text} />
+        </Pressable>
         <View style={[styles.sep, { backgroundColor: t.colors.glassBorder }]} />
-        <Btn onPress={onZoomOut} label="Dézoomer">
+        <Pressable onPress={tap(onZoomOut)} style={styles.btn} accessibilityLabel="Dézoomer" hitSlop={4}>
           <View style={[styles.minus, { backgroundColor: t.colors.text }]} />
-        </Btn>
+        </Pressable>
       </View>
 
-      <View style={[styles.single, surface, following && { borderColor: t.colors.primary }]}>
-        <Btn onPress={onLocate} label="Recentrer">
-          <Icon name="locate" size={21} color={following ? t.colors.primary : t.colors.text} />
-        </Btn>
-      </View>
+      <Pressable
+        onPress={tap(onLocate)}
+        style={[styles.single, surface, following && { borderColor: t.colors.primary }]}
+        accessibilityLabel="Recentrer"
+        hitSlop={4}
+      >
+        <Icon name="locate" size={19} color={following ? t.colors.primary : t.colors.text} />
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  col: { gap: 10, alignItems: 'center' },
-  group: { width: 44, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  single: { width: 44, height: 44, borderRadius: 14, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  btn: { height: 44, alignItems: 'center', justifyContent: 'center' },
+  col: { gap: 8, alignItems: 'center' },
+  compass: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  group: { width: 40, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  single: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btn: { height: 40, alignItems: 'center', justifyContent: 'center' },
   sep: { height: StyleSheet.hairlineWidth, marginHorizontal: 8 },
-  minus: { width: 14, height: 2, borderRadius: 1 },
-  needle: {
+  minus: { width: 13, height: 2, borderRadius: 1 },
+  needleN: {
     width: 0,
     height: 0,
     borderLeftWidth: 4,
     borderRightWidth: 4,
-    borderBottomWidth: 8,
+    borderBottomWidth: 9,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  needleS: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 4,
+    borderRightWidth: 4,
+    borderTopWidth: 9,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },

@@ -125,6 +125,14 @@ En **Expo Go** la carte fonctionne sans configuration. Pour un **build Android a
 - « Vous êtes probablement arrivé » seulement dans le rayon d'incertitude (min. 8 m), avec hystérésis, et uniquement avec une position fraîche.
 - Pas de flèche « certaine » quand la voiture est dans la marge d'erreur ; flèche atténuée si la direction est approximative ou la boussole mal calibrée.
 
+**Filtre temps réel** — `src/location/liveFilter.ts`
+- Rejette les sauts physiquement impossibles (re-synchronise si plusieurs mesures concordent), lisse par filtre de Kalman : le point « Vous » ne saute plus de 10 → 3 → 18 m.
+- Mesure la dispersion réelle du signal, intégrée à l'incertitude combinée. La précision affichée reste la valeur du téléphone.
+
+**Présentation** — `src/location/presentation.ts`
+- Une seule fonction décide des textes : distance toujours « ≈ », précisions réelles (« ±9 m », palier en complément), « Vous êtes probablement arrivé » + rayon, fraîcheur (« Position mise à jour à l'instant », « Dernière position fiable il y a 8 s »). Testée pour ±3, ±5, ±10, ±15 et ±30 m.
+- « Arrivé » exige que la condition tienne 3 s d'affilée (une mesure chanceuse ne suffit pas).
+
 **Temps réel** — `src/store/locationStore.ts` (source de vérité unique)
 - Profils GPS : `guidance` (1 s + boussole) sur Retrouver, `map` (~4 s) sur l'accueil, coupé ailleurs et en arrière-plan.
 - Fraîcheur affichée (« il y a 3 s »), états « GPS en attente » / « Signal perdu ».
@@ -136,8 +144,9 @@ En **Expo Go** la carte fonctionne sans configuration. Pour un **build Android a
 ### Tests
 
 ```bash
-npm test          # scénarios simulés : ciel dégagé, parking, bâtiment (multitrajet),
-                  # déplacement 10–50 m, GPS faible, perte du signal, hors ligne
+npm test          # 84 tests : ciel dégagé, parking, bâtiment (multitrajet), déplacement
+                  # 10–50 m, GPS faible, perte du signal, hors ligne, sauts GPS,
+                  # cohérence de l'affichage pour ±3 / ±5 / ±10 / ±15 / ±30 m
 npm run typecheck
 ```
 

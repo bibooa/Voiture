@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS: Settings = {
   animations: true,
   haptics: true,
   mapType: 'standard',
-  autoRotateMap: false,
+  headingUpMap: true,
   highAccuracy: true,
   stabilization: 'balanced',
   onlineRouting: true,

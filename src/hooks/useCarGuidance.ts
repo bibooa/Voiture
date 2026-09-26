@@ -3,44 +3,38 @@ import { useLocationStore } from '@/store/locationStore';
 import { useCarStore } from '@/store/carStore';
 import { useRouteStore, MIN_ROUTE_DISTANCE } from '@/store/routeStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { computeArrival, computeGuidance, type ArrivalState, type Guidance } from '@/location/guidance';
+import {
+  computeGuidance,
+  stepArrival,
+  INITIAL_ARRIVAL,
+  type ArrivalMemory,
+  type Guidance,
+} from '@/location/guidance';
 import { compassReliability, normalizeDeg, type CompassReliability } from '@/location/heading';
-import { gpsQuality, type GpsQuality } from '@/location/quality';
+import { presentGuidance, type GuidanceView } from '@/location/presentation';
+import { PROFILE_INTERVAL_S } from '@/services/location';
 import type { LiveFix, ParkedLocation } from '@/types';
 import type { WalkingRoute } from '@/services/routing';
 
 /**
- * Everything the UI needs about "me vs. my car", derived from the single live
- * location store + the saved car + the shared route. Home and Find both use
- * this hook, so they always show the same numbers.
+ * Everything the UI needs about "me vs. my car": the filtered live position
+ * (single store), the saved car, the shared walking route, and the ready-made
+ * presentation (`view`) that every screen renders. Home and Find both use this
+ * hook, so they always show the same numbers and the same words.
  */
 
-export type Freshness = 'live' | 'stale' | 'lost' | 'none';
-
-/** Seconds without an update before we call the fix stale / lost. */
-const STALE_AFTER_S = { guidance: 8, map: 20 } as const;
-const LOST_AFTER_S = { guidance: 30, map: 60 } as const;
-
-// Arrival memory shared by all hook instances (hysteresis, per car).
-let arrivalMemory: { carId: string; state: ArrivalState } | null = null;
+// Arrival memory shared by all hook instances (hysteresis + dwell), per car.
+let arrivalMemory: { carId: string; mem: ArrivalMemory; fixTs: number } | null = null;
 
 export type CarGuidance = {
   car: ParkedLocation | null;
   fix: LiveFix | null;
-  /** Age of the live fix in seconds (null when no fix). */
-  fixAgeS: number | null;
-  freshness: Freshness;
-  userQuality: GpsQuality;
   guidance: Guidance | null;
-  arrival: ArrivalState | null;
   compass: CompassReliability;
-  /** Heading-relative bearing (deg) when a compass is available, else null. */
-  relativeBearing: number | null;
   headingValue: number | null;
+  /** Real route geometry to draw (only when used for the distance). */
   route: WalkingRoute | null;
-  routeStatus: string;
-  /** What to show as "the" distance: route length when available, else direct. */
-  primary: { meters: number; kind: 'route' | 'direct'; durationS: number | null } | null;
+  view: GuidanceView;
 };
 
 export function useCarGuidance(now: number): CarGuidance {
@@ -53,32 +47,37 @@ export function useCarGuidance(now: number): CarGuidance {
   const routeStatus = useRouteStore((s) => s.status);
   const updateRoute = useRouteStore((s) => s.update);
 
-  const profile = active ?? 'map';
-  const fixAgeS = fix ? Math.max(0, Math.round((now - fix.timestamp) / 1000)) : null;
-  const freshness: Freshness =
-    fixAgeS == null ? 'none' : fixAgeS > LOST_AFTER_S[profile] ? 'lost' : fixAgeS > STALE_AFTER_S[profile] ? 'stale' : 'live';
-
   const guidance = useMemo(() => {
     if (!fix || !car) return null;
     return computeGuidance(
-      { latitude: fix.latitude, longitude: fix.longitude, accuracy: fix.accuracy },
+      { latitude: fix.latitude, longitude: fix.longitude, accuracy: fix.accuracy, scatter: fix.scatter },
       { latitude: car.latitude, longitude: car.longitude, accuracy: car.accuracy }
     );
   }, [fix, car]);
 
-  // Arrival only from a fresh fix — never from a position that is outdated.
-  let arrival: ArrivalState | null = null;
-  if (guidance && car && freshness === 'live') {
-    const prev = arrivalMemory && arrivalMemory.carId === car.id ? arrivalMemory.state : 'far';
-    arrival = computeArrival(guidance.distance, guidance.uncertainty, prev);
-    arrivalMemory = { carId: car.id, state: arrival };
+  // Arrival: advance the (hysteresis + dwell) state machine once per NEW fix.
+  const interval = PROFILE_INTERVAL_S[active ?? 'map'];
+  const fixAge = fix ? (now - fix.timestamp) / 1000 : Infinity;
+  let arrival = null as ArrivalMemory['state'] | null;
+  if (guidance && car && fix) {
+    if (!arrivalMemory || arrivalMemory.carId !== car.id) {
+      arrivalMemory = { carId: car.id, mem: INITIAL_ARRIVAL, fixTs: 0 };
+    }
+    if (fix.timestamp !== arrivalMemory.fixTs) {
+      arrivalMemory = {
+        carId: car.id,
+        mem: stepArrival(arrivalMemory.mem, guidance.distance, guidance.uncertainty, fix.timestamp),
+        fixTs: fix.timestamp,
+      };
+    }
+    // Never assert arrival from an outdated position.
+    arrival = fixAge <= Math.max(5, interval * 2.5) ? arrivalMemory.mem.state : null;
   }
 
   const compass = compassReliability(heading);
   const relativeBearing =
     guidance && heading && compass !== 'unavailable' ? normalizeDeg(guidance.bearing - heading.value) : null;
 
-  // Keep the shared walking route in sync (deduplicated inside the store).
   useEffect(() => {
     updateRoute({
       user: fix ? { latitude: fix.latitude, longitude: fix.longitude } : null,
@@ -87,28 +86,27 @@ export function useCarGuidance(now: number): CarGuidance {
     });
   }, [fix, car, onlineRouting, updateRoute]);
 
-  const useRoute =
-    !!guidance && !!route && routeStatus === 'ok' && guidance.distance >= MIN_ROUTE_DISTANCE && freshness !== 'lost';
+  const useRoute = !!guidance && !!route && routeStatus === 'ok' && guidance.distance >= MIN_ROUTE_DISTANCE;
 
-  const primary = guidance
-    ? useRoute
-      ? { meters: route!.distance, kind: 'route' as const, durationS: route!.duration }
-      : { meters: guidance.distance, kind: 'direct' as const, durationS: null }
-    : null;
-
-  return {
-    car,
-    fix,
-    fixAgeS,
-    freshness,
-    userQuality: gpsQuality(fix?.accuracy),
+  const view = presentGuidance({
+    now,
+    expectedIntervalS: interval,
+    car: car ? { accuracy: car.accuracy, savedAt: car.savedAt } : null,
+    fix: fix ? { accuracy: fix.accuracy, timestamp: fix.timestamp } : null,
     guidance,
     arrival,
     compass,
     relativeBearing,
+    route: useRoute ? { distance: route!.distance, duration: route!.duration } : null,
+  });
+
+  return {
+    car,
+    fix,
+    guidance,
+    compass,
     headingValue: heading?.value ?? null,
     route: useRoute ? route : null,
-    routeStatus,
-    primary,
+    view,
   };
 }

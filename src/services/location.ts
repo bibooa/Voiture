@@ -1,6 +1,6 @@
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
-import type { LiveFix } from '@/types';
+import type { RawFix } from '@/location/liveFilter';
 import {
   fuseSamples,
   stopReason,
@@ -45,7 +45,8 @@ function toSample(loc: Location.LocationObject): Sample {
   };
 }
 
-export function toLiveFix(loc: Location.LocationObject): LiveFix {
+/** A raw OS fix (before the live filter). */
+export function toRawFix(loc: Location.LocationObject): RawFix {
   return {
     latitude: loc.coords.latitude,
     longitude: loc.coords.longitude,
@@ -193,10 +194,13 @@ export type LocationSubscription = { remove: () => void };
 /** Battery profiles for the live position. */
 export type WatchProfile = 'map' | 'guidance';
 
+/** Nominal seconds between fixes per profile (drives "stale" thresholds). */
+export const PROFILE_INTERVAL_S: Record<WatchProfile, number> = { guidance: 1, map: 4 };
+
 export async function watchPosition(
   profile: WatchProfile,
   highAccuracy: boolean,
-  cb: (fix: LiveFix) => void
+  cb: (fix: RawFix) => void
 ): Promise<LocationSubscription> {
   const options: Location.LocationOptions =
     profile === 'guidance'
@@ -208,16 +212,18 @@ export async function watchPosition(
       : {
           accuracy: highAccuracy ? Location.Accuracy.High : Location.Accuracy.Balanced,
           timeInterval: 4000,
-          distanceInterval: 3,
+          // 0 so a stationary user still gets periodic fixes (otherwise the
+          // position would look "stale" while standing still).
+          distanceInterval: 0,
         };
-  return Location.watchPositionAsync(options, (loc) => cb(toLiveFix(loc)));
+  return Location.watchPositionAsync(options, (loc) => cb(toRawFix(loc)));
 }
 
 /** A recent last-known fix (≤ maxAgeMs) for an instant first paint, or null. */
-export async function getRecentFix(maxAgeMs = 15000): Promise<LiveFix | null> {
+export async function getRecentFix(maxAgeMs = 15000): Promise<RawFix | null> {
   try {
     const loc = await Location.getLastKnownPositionAsync({ maxAge: maxAgeMs, requiredAccuracy: 50 });
-    return loc ? toLiveFix(loc) : null;
+    return loc ? toRawFix(loc) : null;
   } catch {
     return null;
   }

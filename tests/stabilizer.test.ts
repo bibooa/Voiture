@@ -23,7 +23,7 @@ describe('Test 1 — open sky', () => {
   it('reports an honest, good accuracy', () => {
     expect(fix.accuracy).toBeGreaterThanOrEqual(Math.ceil(fix.bestSampleAccuracy));
     expect(fix.accuracy).toBeLessThanOrEqual(5);
-    expect(['excellent', 'good']).toContain(fix.quality);
+    expect(fix.quality).toBe('excellent');
   });
   it('is stable and saved without asking', () => {
     expect(isStable(samples, balanced)).toBe(true);
@@ -118,10 +118,12 @@ describe('Honesty invariants (200 random scenarios)', () => {
   });
   it('uses consistent tiers', () => {
     expect(gpsQuality(3)).toBe('excellent');
-    expect(gpsQuality(4.1)).toBe('good'); // shown as ±5 m → "good"
-    expect(gpsQuality(8)).toBe('good');
-    expect(gpsQuality(10)).toBe('fair');
-    expect(gpsQuality(20)).toBe('poor');
+    expect(gpsQuality(5)).toBe('excellent');
+    expect(gpsQuality(5.1)).toBe('good'); // shown as ±6 m → "bonne"
+    expect(gpsQuality(10)).toBe('good');
+    expect(gpsQuality(15)).toBe('fair');
+    expect(gpsQuality(20)).toBe('fair');
+    expect(gpsQuality(21)).toBe('poor');
     expect(gpsQuality(null)).toBe('unknown');
   });
   it('percentile returns an actual element', () => {

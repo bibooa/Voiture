@@ -28,8 +28,6 @@ import { useSaveCar } from '@/hooks/useSaveCar';
 import { useCarStore } from '@/store/carStore';
 import { useLocationStore } from '@/store/locationStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { formatDistance, formatDuration } from '@/utils/geo';
-import { formatAccuracy, gpsQuality } from '@/location/quality';
 import { timeAgo } from '@/utils/time';
 import { APP_NAME } from '@/constants';
 
@@ -55,7 +53,7 @@ export default function HomeScreen() {
 
   const headerH = insets.top + 64;
   const car = g.car;
-  const carLabel = g.primary ? formatDistance(g.primary.meters) : undefined;
+  const carLabel = g.view.distanceText ?? undefined;
 
   return (
     <View style={[styles.root, { backgroundColor: t.colors.background }]}>
@@ -96,7 +94,7 @@ export default function HomeScreen() {
       </View>
 
       <View style={[styles.badgeRow, { top: headerH + 4 }]} pointerEvents="box-none">
-        <GpsBadge accuracy={g.fix?.accuracy} freshness={g.freshness} />
+        <GpsBadge accuracy={g.fix?.accuracy} freshness={g.view.freshness} />
       </View>
 
       <View style={[styles.controls, { bottom: cardH + 12 }]} pointerEvents="box-none">
@@ -105,7 +103,7 @@ export default function HomeScreen() {
           onZoomOut={() => mapRef.current?.zoomBy(-1)}
           onLocate={() => mapRef.current?.fitAll()}
           cameraHeading={camHeading}
-          onResetNorth={() => mapRef.current?.resetNorth()}
+          onCompassPress={() => mapRef.current?.resetNorth()}
         />
       </View>
 
@@ -225,47 +223,51 @@ export default function HomeScreen() {
   );
 }
 
-/** "125 m · 2 min à pied" + honest uncertainty line. Shared wording with Find. */
+/**
+ * Compact summary, worded by the shared presentation model so it always says
+ * the same thing as the Find screen: "≈ 125 m · 2 min à pied", then the real
+ * accuracies ("Voiture ±5 m · Vous ±9 m").
+ */
 function DistanceSummary({ g }: { g: ReturnType<typeof useCarGuidance> }) {
   const t = useTheme();
-  const carQ = gpsQuality(g.car?.accuracy);
-
-  if (!g.guidance || !g.primary) {
-    return (
-      <View style={[styles.summary, { borderColor: t.colors.glassBorder }]}>
-        <AppText variant="caption" tone="secondary">
-          {g.freshness === 'none' ? 'Recherche de votre position…' : 'Distance indisponible'}
-          {'  ·  '}
-          <AppText variant="caption" color={qualityColor(t, carQ)}>
-            voiture {formatAccuracy(g.car?.accuracy)}
-          </AppText>
-        </AppText>
-      </View>
-    );
-  }
-
-  const arrived = g.arrival === 'probably-arrived';
+  const v = g.view;
   return (
     <View style={[styles.summary, { borderColor: t.colors.glassBorder }]}>
-      {arrived ? (
-        <AppText variant="callout" weight="bold" color={t.colors.car}>
-          Vous êtes probablement arrivé
+      {v.headline ? (
+        <AppText variant="callout" weight="bold" color={v.headlineTone === 'success' ? t.colors.car : t.colors.primary}>
+          {v.headline}
+          {v.distanceText ? (
+            <AppText variant="callout" tone="secondary" weight="medium">
+              {'  ·  '}
+              {v.distanceText}
+            </AppText>
+          ) : null}
         </AppText>
-      ) : (
+      ) : v.distanceText ? (
         <AppText variant="headline" weight="bold">
-          {formatDistance(g.primary.meters)}
+          {v.distanceText}
           <AppText variant="callout" tone="secondary" weight="medium">
-            {g.primary.durationS != null ? `  ·  ${formatDuration(g.primary.durationS)} à pied` : '  ·  distance directe'}
+            {v.routeText ? `  ·  ${v.routeText}` : '  ·  à vol d’oiseau'}
           </AppText>
         </AppText>
-      )}
-      <AppText variant="caption" tone="muted" style={{ marginTop: 2 }}>
-        {g.guidance.uncertainty != null ? `Incertitude ±${g.guidance.uncertainty} m · ` : ''}
-        voiture{' '}
-        <AppText variant="caption" color={qualityColor(t, carQ)}>
-          {formatAccuracy(g.car?.accuracy)}
+      ) : (
+        <AppText variant="caption" tone="secondary">
+          {v.freshnessText}
         </AppText>
-        {g.freshness !== 'live' ? '  ·  position à actualiser' : ''}
+      )}
+      <AppText variant="caption" tone="secondary" style={{ marginTop: 3 }}>
+        Voiture{' '}
+        <AppText variant="caption" weight="bold" color={qualityColor(t, v.carTier)}>
+          {v.carAccuracyText}
+        </AppText>
+        {g.fix ? (
+          <>
+            {'  ·  Vous '}
+            <AppText variant="caption" weight="bold" color={qualityColor(t, v.userTier)}>
+              {v.userAccuracyText}
+            </AppText>
+          </>
+        ) : null}
       </AppText>
     </View>
   );

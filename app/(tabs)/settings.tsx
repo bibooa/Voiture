@@ -182,9 +182,9 @@ export default function SettingsScreen() {
           />
           <SettingsRow
             icon="compass"
-            label="Rotation automatique"
-            description="En mode Retrouver, oriente la carte selon la boussole (si elle est fiable)."
-            right={<Toggle value={s.autoRotateMap} onValueChange={(v) => s.set('autoRotateMap', v)} />}
+            label="Carte orientée selon le téléphone"
+            description="En mode Retrouver, la carte tourne avec la boussole — uniquement si elle est fiable. Sinon, le nord reste en haut."
+            right={<Toggle value={s.headingUpMap} onValueChange={(v) => s.set('headingUpMap', v)} />}
             last
           />
         </Group>

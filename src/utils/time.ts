@@ -72,3 +72,13 @@ export function formatShortWhen(epochMs: number, now: number = Date.now()): stri
   if (same(d, yesterday)) return 'hier';
   return `${d.getDate()} ${MOIS[d.getMonth()]}`;
 }
+
+/** "à 12:28" today, "hier à 12:28", else "le 3 mars à 12:28". */
+export function formatSavedAt(epochMs: number, now: number = Date.now()): string {
+  const d = new Date(epochMs);
+  const when = formatShortWhen(epochMs, now);
+  const time = hhmm(d);
+  if (when === time) return `à ${time}`;
+  if (when === 'hier') return `hier à ${time}`;
+  return `le ${when} à ${time}`;
+}

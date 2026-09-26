@@ -13,14 +13,24 @@ import { honestMeters } from './quality';
 export type ArrivalState = 'far' | 'near' | 'probably-arrived';
 export type DirectionConfidence = 'high' | 'low' | 'none';
 
-/** Combined ±m uncertainty on the user↔car distance, or null if unknown. */
+/**
+ * Combined ±m uncertainty on the user↔car distance, or null if unknown.
+ *
+ * The two position errors are independent, so they combine as a root sum of
+ * squares: √(car² + user²) — larger than either alone, smaller than their sum.
+ * The user's term is the WORSE of the OS-reported accuracy and the live
+ * scatter actually observed (an unstable signal is less trustworthy than what
+ * the OS claims).
+ */
 export function combinedUncertainty(
   carAccuracy: number | null | undefined,
-  userAccuracy: number | null | undefined
+  userAccuracy: number | null | undefined,
+  userScatter = 0
 ): number | null {
   if (carAccuracy == null || userAccuracy == null) return null;
   if (!isFinite(carAccuracy) || !isFinite(userAccuracy)) return null;
-  return honestMeters(Math.sqrt(carAccuracy * carAccuracy + userAccuracy * userAccuracy));
+  const u = Math.max(userAccuracy, isFinite(userScatter) ? userScatter : 0);
+  return honestMeters(Math.sqrt(carAccuracy * carAccuracy + u * u));
 }
 
 /** We never claim arrival closer than this, whatever the GPS says. */
@@ -50,6 +60,31 @@ export function computeArrival(
   return 'far';
 }
 
+/** The arrival condition must hold this long before we say "probably arrived". */
+export const ARRIVAL_DWELL_MS = 3000;
+
+export type ArrivalMemory = { state: ArrivalState; candidateSince: number | null };
+export const INITIAL_ARRIVAL: ArrivalMemory = { state: 'far', candidateSince: null };
+
+/**
+ * Arrival with hysteresis AND stability: "probably arrived" is only declared
+ * once the user has stayed within the uncertainty radius for ARRIVAL_DWELL_MS
+ * (a single lucky fix is not enough). Until then the state is "near".
+ */
+export function stepArrival(
+  mem: ArrivalMemory,
+  distance: number,
+  uncertainty: number | null,
+  now: number
+): ArrivalMemory {
+  const raw = computeArrival(distance, uncertainty, mem.state);
+  if (raw !== 'probably-arrived') return { state: raw, candidateSince: null };
+  if (mem.state === 'probably-arrived') return mem;
+  const since = mem.candidateSince ?? now;
+  if (now - since >= ARRIVAL_DWELL_MS) return { state: 'probably-arrived', candidateSince: since };
+  return { state: 'near', candidateSince: since };
+}
+
 /**
  * How much the bearing can be trusted given positional uncertainty alone.
  * When the distance is not larger than the uncertainty, the car could be in any
@@ -73,11 +108,11 @@ export type Guidance = {
 };
 
 export function computeGuidance(
-  user: LatLng & { accuracy: number | null },
+  user: LatLng & { accuracy: number | null; scatter?: number },
   car: LatLng & { accuracy: number | null }
 ): Guidance {
   const distance = distanceMeters(user, car);
-  const uncertainty = combinedUncertainty(car.accuracy, user.accuracy);
+  const uncertainty = combinedUncertainty(car.accuracy, user.accuracy, user.scatter ?? 0);
   return {
     distance,
     uncertainty,

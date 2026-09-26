@@ -13,6 +13,14 @@ const toDeg = (rad: number) => (rad * 180) / Math.PI;
 
 export type LatLng = { latitude: number; longitude: number };
 
+/** Move a point by (east, north) metres — local flat-earth approximation. */
+export function offsetMeters(p: LatLng, east: number, north: number): LatLng {
+  return {
+    latitude: p.latitude + north / 111320,
+    longitude: p.longitude + east / (111320 * Math.cos(toRad(p.latitude))),
+  };
+}
+
 /** Great-circle distance between two points, in metres. */
 export function distanceMeters(a: LatLng, b: LatLng): number {
   const dLat = toRad(b.latitude - a.latitude);

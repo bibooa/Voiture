@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import type { LiveFix } from '@/types';
 import * as Loc from '@/services/location';
 import { smoothHeading } from '@/location/heading';
+import { stepFilter, scatterOf, type FilterState, type RawFix } from '@/location/liveFilter';
 import { useSettingsStore } from '@/store/settingsStore';
 
 /**
@@ -45,6 +46,25 @@ let headSub: Loc.LocationSubscription | null = null;
 let appActive = AppState.currentState === 'active';
 let applying: Promise<void> = Promise.resolve();
 let lastHeadingEmit = 0;
+let filter: FilterState | null = null;
+
+/** Filtered, stable position published to the UI (null = keep previous). */
+function ingest(raw: RawFix): LiveFix | null {
+  // After a long gap the old estimate is meaningless: start over.
+  if (filter && raw.timestamp - filter.timestamp > 30_000) filter = null;
+  const { state, accepted } = stepFilter(filter, raw);
+  filter = state;
+  if (!accepted) return null; // outlier: keep the last reliable position
+  return {
+    latitude: state.latitude,
+    longitude: state.longitude,
+    accuracy: state.accuracy, // the OS value, never a filtered one
+    altitude: state.altitude,
+    speed: state.speed,
+    timestamp: state.timestamp,
+    scatter: scatterOf(state),
+  };
+}
 
 function desiredProfile(): Profile | null {
   if (!appActive) return null;
@@ -92,15 +112,14 @@ export const useLocationStore = create<LocationState>((set, get) => {
     const current = get().fix;
     if (!current || Date.now() - current.timestamp > 15000) {
       const recent = await Loc.getRecentFix();
-      if (recent) set({ fix: recent });
+      const seeded = recent ? ingest(recent) : null;
+      if (seeded) set({ fix: seeded });
     }
 
     try {
-      posSub = await Loc.watchPosition(want, highAccuracy, (fix) => {
-        const prev = get().fix;
-        // Ignore out-of-order deliveries.
-        if (prev && fix.timestamp < prev.timestamp) return;
-        set({ fix, error: null });
+      posSub = await Loc.watchPosition(want, highAccuracy, (raw) => {
+        const fix = ingest(raw);
+        if (fix) set({ fix, error: null });
       });
       if (want === 'guidance') {
         headSub = await Loc.watchHeading((value, accuracy) => {

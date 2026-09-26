@@ -19,6 +19,8 @@ export type LiveFix = {
   speed: number | null;
   /** Epoch millis when the OS produced this fix. */
   timestamp: number;
+  /** Recent scatter of raw fixes around the filtered position (m). */
+  scatter: number;
 };
 
 /** A saved parking location. */
@@ -64,8 +66,8 @@ export type Settings = {
   animations: boolean;
   haptics: boolean;
   mapType: MapType;
-  /** Rotate the map with the compass in guidance mode. */
-  autoRotateMap: boolean;
+  /** Rotate the map with the compass in guidance mode (when reliable). */
+  headingUpMap: boolean;
   /** Use every available location source for the best possible fix. */
   highAccuracy: boolean;
   /** How long to stabilise the position when saving the car. */
