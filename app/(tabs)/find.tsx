@@ -28,11 +28,14 @@ import { useLocationProfile } from '@/hooks/useLocationProfile';
 import { useCarGuidance } from '@/hooks/useCarGuidance';
 import { useNow } from '@/hooks/useNow';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useCarStore } from '@/store/carStore';
 import { formatSavedAt } from '@/utils/time';
 import { navigationApps, shareLocation } from '@/services/navigation';
 import { haptics } from '@/services/haptics';
 
 const TAB_BAR_SPACE = 84;
+/** Tilted camera: streets in perspective and buildings in 3D. */
+const MAP_PITCH = 55;
 
 /**
  * "Retrouver ma voiture": where am I → where is my car → which way.
@@ -51,6 +54,7 @@ export default function FindScreen() {
   const mapType = useSettingsStore((s) => s.mapType);
   const headingUp = useSettingsStore((s) => s.headingUpMap);
   const setSetting = useSettingsStore((s) => s.set);
+  const moveCar = useCarStore((s) => s.moveCar);
 
   const [follow, setFollow] = useState(true);
   const [panelH, setPanelH] = useState(320);
@@ -118,6 +122,11 @@ export default function FindScreen() {
         rotateWithHeading={rotate}
         onCameraHeading={setCamHeading}
         onScale={setMpp}
+        pitch={MAP_PITCH}
+        onCarMoved={(p) => {
+          haptics.success();
+          moveCar(car.id, p.latitude, p.longitude);
+        }}
       />
 
       {/* TOP: GPS badge + freshness */}
@@ -226,6 +235,14 @@ export default function FindScreen() {
             <Fact label="Précision voiture" value={v.carAccuracyText} color={qualityColor(t, v.carTier)} />
             <Fact label="Précision actuelle" value={v.userAccuracyText} color={qualityColor(t, v.userTier)} />
           </View>
+          {!car.adjusted ? (
+            <View style={styles.hint}>
+              <Icon name="pin" size={13} color={t.colors.primary} />
+              <AppText variant="caption" tone="secondary" style={{ marginLeft: 6, flex: 1 }}>
+                Appui long sur la voiture pour la placer pile au bon endroit.
+              </AppText>
+            </View>
+          ) : null}
           {v.uncertaintyText && !v.headline ? (
             <AppText variant="caption" tone="muted" style={{ marginTop: 6 }}>
               {v.uncertaintyText}
@@ -309,6 +326,7 @@ const styles = StyleSheet.create({
   fact: { flex: 1 },
   factValue: { fontSize: 15 },
   factLabel: { fontSize: 11, marginTop: 1 },
+  hint: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   actions: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
   shareBtn: {
     width: 54,

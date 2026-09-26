@@ -27,7 +27,7 @@ export const LOST_AFTER_S = 30;
 
 export type PresentInput = {
   now: number;
-  car: { accuracy: number | null; savedAt: number } | null;
+  car: { accuracy: number | null; savedAt: number; adjusted?: boolean } | null;
   fix: { accuracy: number | null; timestamp: number } | null;
   guidance: Guidance | null;
   arrival: ArrivalState | null;
@@ -171,7 +171,7 @@ export function presentGuidance(i: PresentInput): GuidanceView {
     freshnessText,
     userAccuracyText: formatAccuracy(i.fix?.accuracy),
     userTier,
-    carAccuracyText: formatAccuracy(i.car?.accuracy),
+    carAccuracyText: i.car?.adjusted ? 'placée à la main' : formatAccuracy(i.car?.accuracy),
     carTier: gpsQuality(i.car?.accuracy),
     distanceText,
     distanceKind,

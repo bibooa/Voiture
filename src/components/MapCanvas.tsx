@@ -36,6 +36,10 @@ type Props = {
   onCameraHeading?: (deg: number) => void;
   /** Reports metres per screen point, for a scale bar. */
   onScale?: (metersPerPoint: number) => void;
+  /** Camera tilt in degrees (0 = flat, ~55 = 3D view with buildings). */
+  pitch?: number;
+  /** When set, a long press lets the user drag the car pin to the exact spot. */
+  onCarMoved?: (p: LatLng) => void;
 };
 
 
@@ -73,6 +77,8 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
     rotateWithHeading = false,
     onCameraHeading,
     onScale,
+    pitch = 0,
+    onCarMoved,
   },
   ref
 ) {
@@ -123,22 +129,35 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
     const span = anchors.length === 2 ? distanceMeters(anchors[0], anchors[1]) : 0;
     const maxAcc = Math.max(user?.accuracy ?? 0, car?.accuracy ?? 0);
     const half = framingHalfSpan(span, maxAcc);
+    // Keep follow mode from interrupting the zoom animation (a centre-only
+    // animateCamera cancels it half-way and left the map at max zoom).
+    lastCam.current = { ...lastCam.current, at: Date.now() + 900 };
+
+    if (Platform.OS === 'android' && size.w > 0) {
+      // Explicit camera: fitToCoordinates would reset the 3D tilt to 0.
+      // Google zoom z shows 156543·cos(lat)/2^z metres per dp.
+      const visibleH = size.h - padding.top - padding.bottom;
+      const sideDp = Math.max(160, Math.min(size.w, visibleH > 0 ? visibleH : size.w));
+      const cos = Math.cos((mid.latitude * Math.PI) / 180);
+      const zoom = Math.min(19, Math.log2((156543.03 * cos * sideDp) / (2 * half)));
+      mapRef.current?.animateCamera({ center: mid, zoom, pitch }, { duration: 700 });
+      return;
+    }
     const pts: LatLng[] = [
       ...anchors,
       offsetMeters(mid, -half, -half),
       offsetMeters(mid, half, half),
       ...(route && route.length > 1 ? route : []),
     ];
-    // Keep follow mode from interrupting the zoom animation (a centre-only
-    // animateCamera cancels it half-way and left the map at max zoom).
-    lastCam.current = { ...lastCam.current, at: Date.now() + 900 };
     mapRef.current?.fitToCoordinates(pts, { edgePadding: edge, animated: true });
+    if (pitch) setTimeout(() => mapRef.current?.animateCamera({ pitch }, { duration: 500 }), 650);
   };
 
-  // fitToCoordinates is ignored by Google Maps until the map is laid out.
+  // Camera moves are ignored by Google Maps until the map is laid out.
   const [ready, setReady] = useState(false);
 
-  const [widthPts, setWidthPts] = useState(0);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  const widthPts = size.w;
 
   useImperativeHandle(ref, () => ({
     fitAll,
@@ -183,7 +202,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       if (cancelled) return;
       if (wantHeading != null) setCamHeading(wantHeading);
       mapRef.current?.animateCamera(
-        { center, ...(wantHeading != null ? { heading: wantHeading } : {}) },
+        { center, pitch, ...(wantHeading != null ? { heading: wantHeading } : {}) },
         { duration: 500 }
       );
     });
@@ -191,7 +210,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [follow, user, heading, rotateWithHeading]);
+  }, [follow, user, heading, rotateWithHeading, pitch]);
 
   const initialRegion: Region = user
     ? { latitude: user.latitude, longitude: user.longitude, latitudeDelta: 0.004, longitudeDelta: 0.004 }
@@ -220,9 +239,9 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       toolbarEnabled={false}
       moveOnMarkerPress={false}
       rotateEnabled
-      pitchEnabled={false}
+      pitchEnabled
       onPanDrag={() => follow && onFollowChange?.(false)}
-      onLayout={(e) => setWidthPts(e.nativeEvent.layout.width)}
+      onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
       onMapReady={() => setReady(true)}
       maxZoomLevel={19.5}
       onRegionChangeComplete={async (region) => {
@@ -273,7 +292,16 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       ) : null}
 
       {car ? (
-        <Marker coordinate={car} anchor={{ x: 0.5, y: 0.5 }} image={MARKER_CAR} tracksViewChanges={false} title="Votre voiture" zIndex={2} />
+        <Marker
+          coordinate={car}
+          anchor={{ x: 0.5, y: 0.5 }}
+          image={MARKER_CAR}
+          tracksViewChanges={false}
+          zIndex={2}
+          draggable={!!onCarMoved}
+          onDragStart={() => follow && onFollowChange?.(false)}
+          onDragEnd={(e) => onCarMoved?.(e.nativeEvent.coordinate)}
+        />
       ) : null}
 
       {user ? (

@@ -42,6 +42,8 @@ export type ParkedLocation = {
   sampleCount?: number;
   /** True when the user chose to save despite an imprecise fix. */
   forced?: boolean;
+  /** True when the user moved the pin by hand to the exact spot. */
+  adjusted?: boolean;
 };
 
 /** A user-defined favourite place. */

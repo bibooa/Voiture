@@ -91,7 +91,7 @@ export function useCarGuidance(now: number): CarGuidance {
   const view = presentGuidance({
     now,
     expectedIntervalS: interval,
-    car: car ? { accuracy: car.accuracy, savedAt: car.savedAt } : null,
+    car: car ? { accuracy: car.accuracy, savedAt: car.savedAt, adjusted: car.adjusted } : null,
     fix: fix ? { accuracy: fix.accuracy, timestamp: fix.timestamp } : null,
     guidance,
     arrival,

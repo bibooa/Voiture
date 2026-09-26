@@ -4,6 +4,8 @@ import { StorageKeys, readJSON, writeJSON } from '@/services/storage';
 import { makeId } from '@/utils/id';
 
 const HISTORY_LIMIT = 50;
+/** Placement error (m) of a pin dragged by hand onto the right spot. */
+export const MANUAL_ACCURACY = 3;
 
 export type SavedFix = {
   latitude: number;
@@ -27,6 +29,8 @@ type CarState = {
   /** Attach the (asynchronously resolved) address to a record. */
   setAddress: (id: string, address: string | null) => void;
   rename: (id: string, label: string) => void;
+  /** The user dragged the car pin to the exact spot on the map. */
+  moveCar: (id: string, latitude: number, longitude: number) => void;
   /** Set an optional detail note (parking floor, zone, spot number…). */
   setNote: (id: string, note: string) => void;
   remove: (id: string) => void;
@@ -86,6 +90,16 @@ export const useCarStore = create<CarState>((set, get) => ({
     );
     const current =
       get().current?.id === id ? { ...get().current!, label } : get().current;
+    set({ history, current });
+    persist({ current, history });
+  },
+
+  moveCar: (id, latitude, longitude) => {
+    // A pin placed by hand is as precise as the user's own eye: the GPS radius
+    // no longer applies, only a few metres of placement error.
+    const patch = { latitude, longitude, accuracy: MANUAL_ACCURACY, adjusted: true };
+    const history = get().history.map((h) => (h.id === id ? { ...h, ...patch } : h));
+    const current = get().current?.id === id ? { ...get().current!, ...patch } : get().current;
     set({ history, current });
     persist({ current, history });
   },

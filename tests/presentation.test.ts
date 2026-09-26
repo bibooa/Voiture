@@ -91,6 +91,24 @@ describe('Consistency across accuracies ±3 / ±5 / ±10 / ±15 / ±30 m', () =>
   });
 });
 
+describe('Pin placed by hand', () => {
+  it('shows "placée à la main" instead of a GPS radius', () => {
+    const { g } = scenario(8, 5, 4, 3);
+    const v = presentGuidance({
+      now: 0,
+      car: { accuracy: 3, savedAt: 0, adjusted: true },
+      fix: { accuracy: 8, timestamp: 0 },
+      guidance: g,
+      arrival: 'near',
+      compass: 'good',
+      relativeBearing: 0,
+      route: null,
+    });
+    expect(v.carAccuracyText).toBe('placée à la main');
+    expect(v.userAccuracyText).toBe('±8 m');
+  });
+});
+
 describe('Arrival needs a usable uncertainty', () => {
   it('±30 m: never "probably arrived", even 2 m away', () => {
     for (const s of [0, 3, 10]) expect(scenario(30, 2, s).view.headline).toBe('Votre voiture est dans les environs');
