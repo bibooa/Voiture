@@ -1,8 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Image, Platform, StyleSheet } from 'react-native';
 import MapView, { Marker, Polyline, Circle, type Region, type MapType } from 'react-native-maps';
 import { useTheme } from '@/theme';
-import { CarMarker, UserMarker, HeadingCone } from './markers';
 import { mapDarkStyle } from '@/theme/mapStyle';
 import { distanceMeters, offsetMeters, type LatLng } from '@/utils/geo';
 import { framingHalfSpan } from '@/location/framing';
@@ -21,8 +20,6 @@ export type MapCanvasHandle = {
 type Props = {
   user: LiveFix | null;
   car: ParkedLocation | null;
-  /** Estimated distance shown under the car marker (e.g. "≈ 12 m"). */
-  carLabel?: string;
   /** Compass heading to draw the view cone (null = no cone). */
   heading?: number | null;
   /** Real walking route geometry. When absent, a dashed straight line is drawn. */
@@ -52,18 +49,21 @@ function AccuracyZone({ center, radius, color }: { center: LatLng; radius: numbe
   );
 }
 
+const MARKER_CAR = require('../../assets/markers/car.png');
+const MARKER_USER = require('../../assets/markers/user.png');
+const MARKER_HEADING = require('../../assets/markers/heading.png');
+
 const FALLBACK: Region = { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.02, longitudeDelta: 0.02 };
 
 /**
  * The real, interactive map (Apple Maps on iOS, Google Maps on Android).
- * Draws: the user (dot + optional compass cone + accuracy circle), the car
- * (pin + distance label + saved-accuracy circle) and the walking route.
+ * Draws: the user (dot + optional compass cone + accuracy zone), the car
+ * (marker + saved-accuracy zone) and the walking route.
  */
 export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
   {
     user,
     car,
-    carLabel,
     heading = null,
     route,
     mapType = 'standard',
@@ -80,15 +80,6 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
   const mapRef = useRef<MapView>(null);
   const framedOnce = useRef(false);
   const lastCam = useRef({ at: 0, heading: 0 });
-
-  // Custom marker views are bitmaps on Android: let them repaint briefly
-  // after their content changes, then freeze them for smooth panning.
-  const [tracks, setTracks] = useState(true);
-  useEffect(() => {
-    setTracks(true);
-    const id = setTimeout(() => setTracks(false), 600);
-    return () => clearTimeout(id);
-  }, [carLabel, car?.id, t.colors.isDark]);
 
   // Android (Google Maps) applies `mapPadding` to framing and centring itself.
   // Apple Maps does not, so on iOS we add the overlay insets explicitly.
@@ -138,8 +129,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       offsetMeters(mid, half, half),
       ...(route && route.length > 1 ? route : []),
     ];
+    // Keep follow mode from interrupting the zoom animation (a centre-only
+    // animateCamera cancels it half-way and left the map at max zoom).
+    lastCam.current = { ...lastCam.current, at: Date.now() + 900 };
     mapRef.current?.fitToCoordinates(pts, { edgePadding: edge, animated: true });
   };
+
+  // fitToCoordinates is ignored by Google Maps until the map is laid out.
+  const [ready, setReady] = useState(false);
 
   const [widthPts, setWidthPts] = useState(0);
 
@@ -164,14 +161,14 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
     },
   }));
 
-  // Frame user + car once when both are first known.
+  // Frame user + car once the map is ready and both are known.
   useEffect(() => {
-    if (framedOnce.current || !user || !car) return;
+    if (framedOnce.current || !ready || !user || !car) return;
     framedOnce.current = true;
-    const id = setTimeout(fitAll, 300);
+    const id = setTimeout(fitAll, 150);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!user, !!car]);
+  }, [ready, !!user, !!car]);
 
   // Follow mode (throttled so the camera never fights the user).
   useEffect(() => {
@@ -226,6 +223,7 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
       pitchEnabled={false}
       onPanDrag={() => follow && onFollowChange?.(false)}
       onLayout={(e) => setWidthPts(e.nativeEvent.layout.width)}
+      onMapReady={() => setReady(true)}
       maxZoomLevel={19.5}
       onRegionChangeComplete={async (region) => {
         if (widthPts > 0 && onScale) {
@@ -259,33 +257,27 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
         />
       ) : null}
 
+      {/* Markers are native images (assets/markers, see scripts/make-markers.py):
+          Android rasterises React-view markers and crops them. */}
       {user && heading != null ? (
         Platform.OS === 'android' ? (
-          // Google Maps: flat marker rotated relative to north (bitmap, cheap).
-          <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }} flat rotation={heading} tracksViewChanges={false}>
-            <HeadingCone />
-          </Marker>
+          // Google Maps: flat marker rotated relative to north.
+          <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }} flat rotation={heading} image={MARKER_HEADING} tracksViewChanges={false} zIndex={1} />
         ) : (
           // Apple Maps: marker rotation is not supported, but children are live
           // views — rotate the cone relative to the current map heading.
-          <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={{ transform: [{ rotate: `${heading - camHeading}deg` }] }}>
-              <HeadingCone />
-            </View>
+          <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }} zIndex={1}>
+            <Image source={MARKER_HEADING} style={{ width: 96, height: 96, transform: [{ rotate: `${heading - camHeading}deg` }] }} />
           </Marker>
         )
       ) : null}
 
-      {user ? (
-        <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracks} title="Vous">
-          <UserMarker />
-        </Marker>
+      {car ? (
+        <Marker coordinate={car} anchor={{ x: 0.5, y: 0.5 }} image={MARKER_CAR} tracksViewChanges={false} title="Votre voiture" zIndex={2} />
       ) : null}
 
-      {car ? (
-        <Marker coordinate={car} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={tracks} title="Votre voiture">
-          <CarMarker distance={carLabel} />
-        </Marker>
+      {user ? (
+        <Marker coordinate={user} anchor={{ x: 0.5, y: 0.5 }} image={MARKER_USER} tracksViewChanges={false} title="Vous" zIndex={3} />
       ) : null}
     </MapView>
   );

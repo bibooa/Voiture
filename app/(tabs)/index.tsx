@@ -53,7 +53,6 @@ export default function HomeScreen() {
 
   const headerH = insets.top + 64;
   const car = g.car;
-  const carLabel = g.view.distanceText ?? undefined;
 
   return (
     <View style={[styles.root, { backgroundColor: t.colors.background }]}>
@@ -61,7 +60,6 @@ export default function HomeScreen() {
         ref={mapRef}
         user={g.fix}
         car={car}
-        carLabel={carLabel}
         route={g.route?.coordinates ?? null}
         mapType={mapType}
         padding={{ top: headerH, bottom: cardH }}

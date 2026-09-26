@@ -109,7 +109,6 @@ export default function FindScreen() {
         ref={mapRef}
         user={g.fix}
         car={car}
-        carLabel={v.distanceText ?? undefined}
         heading={compassGood ? g.headingValue : null}
         route={g.route?.coordinates ?? null}
         mapType={mapType}
@@ -223,15 +222,15 @@ export default function FindScreen() {
           ) : null}
 
           <View style={[styles.facts, { borderColor: t.colors.glassBorder }]}>
-            <Fact label="Position enregistrée" value={formatSavedAt(car.savedAt, now)} />
+            <Fact label="Garée" value={formatSavedAt(car.savedAt, now).replace(/^à /, '')} />
             <Fact label="Précision voiture" value={v.carAccuracyText} color={qualityColor(t, v.carTier)} />
             <Fact label="Précision actuelle" value={v.userAccuracyText} color={qualityColor(t, v.userTier)} />
-            {v.uncertaintyText && v.arrowMode !== 'arrived' ? (
-              <AppText variant="caption" tone="muted" style={{ marginTop: 4 }}>
-                {v.uncertaintyText}
-              </AppText>
-            ) : null}
           </View>
+          {v.uncertaintyText && !v.headline ? (
+            <AppText variant="caption" tone="muted" style={{ marginTop: 6 }}>
+              {v.uncertaintyText}
+            </AppText>
+          ) : null}
 
           {v.warning ? (
             <View style={styles.warn}>
@@ -251,17 +250,18 @@ export default function FindScreen() {
             </View>
           ) : null}
 
-          <PrimaryButton label="ME GUIDER" icon="compass" onPress={openGuide} style={{ marginTop: 14 }} />
-          <Pressable
-            onPress={() => shareLocation(car.latitude, car.longitude, car.label ?? 'Ma voiture', car.note)}
-            style={styles.textBtn}
-            hitSlop={6}
-          >
-            <Icon name="share" size={15} color={t.colors.textSecondary} />
-            <AppText variant="callout" weight="semibold" tone="secondary" style={{ marginLeft: 6 }}>
-              Partager la position
-            </AppText>
-          </Pressable>
+          <View style={styles.actions}>
+            <PrimaryButton label="ME GUIDER" icon="compass" onPress={openGuide} style={{ flex: 1 }} />
+            <Pressable
+              onPress={() => shareLocation(car.latitude, car.longitude, car.label ?? 'Ma voiture', car.note)}
+              style={[styles.shareBtn, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}
+              accessibilityRole="button"
+              accessibilityLabel="Partager la position"
+              hitSlop={4}
+            >
+              <Icon name="share" size={20} color={t.colors.text} />
+            </Pressable>
+          </View>
         </GlassCard>
       </Animated.View>
 
@@ -279,11 +279,11 @@ export default function FindScreen() {
 function Fact({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <View style={styles.fact}>
-      <AppText variant="caption" tone="secondary">
-        {label}
-      </AppText>
-      <AppText variant="caption" weight="bold" color={color}>
+      <AppText variant="caption" weight="bold" color={color} style={styles.factValue}>
         {value}
+      </AppText>
+      <AppText variant="caption" tone="muted" style={styles.factLabel} numberOfLines={1}>
+        {label}
       </AppText>
     </View>
   );
@@ -295,7 +295,8 @@ const styles = StyleSheet.create({
   top: { position: 'absolute', top: 0, left: 16, right: 70 },
   fresh: { marginTop: 5, marginLeft: 4 },
   controls: { position: 'absolute', right: 14 },
-  mapFoot: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+  // Right-aligned: the Google logo (bottom-left) must stay visible.
+  mapFoot: { position: 'absolute', right: 14, alignItems: 'flex-end', gap: 6 },
   legend: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, height: 24, borderRadius: 12 },
   legendDot: { width: 9, height: 9, borderRadius: 5, borderWidth: 1.5, borderColor: '#fff', marginRight: 5 },
   legendText: { fontSize: 11 },
@@ -304,8 +305,19 @@ const styles = StyleSheet.create({
   carTile: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
   distance: { fontSize: 30, lineHeight: 36 },
   lh: { lineHeight: 17, marginTop: 2 },
-  facts: { marginTop: 12, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, gap: 3 },
-  fact: { flexDirection: 'row', justifyContent: 'space-between' },
+  facts: { marginTop: 12, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row' },
+  fact: { flex: 1 },
+  factValue: { fontSize: 15 },
+  factLabel: { fontSize: 11, marginTop: 1 },
+  actions: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
+  shareBtn: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   warn: { flexDirection: 'row', alignItems: 'flex-start', marginTop: 10 },
   note: {
     flexDirection: 'row',
@@ -316,5 +328,4 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  textBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 12, paddingBottom: 2 },
 });

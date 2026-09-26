@@ -158,9 +158,9 @@ import { pickScale } from '@/location/scale';
 describe('Map framing keeps accuracy circles proportionate', () => {
   for (const acc of ACCURACIES) {
     for (const d of DISTANCES) {
-      it(`±${acc} m at ${d} m: circle covers < 45 % of the view, both markers visible`, () => {
+      it(`±${acc} m at ${d} m: circle covers ≤ 25 % of the view, both markers visible`, () => {
         const half = framingHalfSpan(d, acc);
-        expect((2 * acc) / (2 * half)).toBeLessThan(0.45);
+        expect((2 * acc) / (2 * half)).toBeLessThanOrEqual(0.25);
         expect(half).toBeGreaterThanOrEqual(d / 2);
       });
     }
