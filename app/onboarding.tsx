@@ -13,7 +13,7 @@ const SLIDES: { icon: IconName; title: string; body: string }[] = [
   {
     icon: 'car',
     title: 'Ne perdez plus jamais votre voiture.',
-    body: 'Garée mémorise l\'endroit exact où vous vous garez, en un seul geste.',
+    body: 'VéhiTrack mémorise l\'endroit exact où vous vous garez, en un seul geste.',
   },
   {
     icon: 'pin',

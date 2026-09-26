@@ -8,15 +8,15 @@ import { useTheme } from '@/theme';
 const SECTIONS = [
   {
     title: 'Une approche privacy-first',
-    body: "Garée est conçue pour fonctionner sans compte et sans serveur. Vos positions de stationnement, votre historique et vos favoris sont enregistrés uniquement dans le stockage local de votre téléphone.",
+    body: "VéhiTrack est conçue pour fonctionner sans compte et sans serveur. Vos positions de stationnement, votre historique et vos favoris sont enregistrés uniquement dans le stockage local de votre téléphone.",
   },
   {
     title: 'Utilisation de la localisation',
-    body: "Votre position n'est lue qu'au moment où vous enregistrez votre voiture ou lorsque vous consultez la carte pour la retrouver. Garée ne suit jamais votre position en arrière-plan.",
+    body: "Votre position n'est lue qu'au moment où vous enregistrez votre voiture ou lorsque vous consultez la carte pour la retrouver. VéhiTrack ne suit jamais votre position en arrière-plan.",
   },
   {
     title: 'Aucune collecte de données',
-    body: "Aucune donnée de localisation n'est envoyée à Garée ni à un tiers. Il n'y a ni analytics de localisation, ni publicité, ni revente de données.",
+    body: "Aucune donnée de localisation n'est envoyée à VéhiTrack ni à un tiers. Il n'y a ni analytics de localisation, ni publicité, ni revente de données.",
   },
   {
     title: 'Adresses approximatives',
@@ -58,7 +58,7 @@ export default function PrivacyScreen() {
               </AppText>
             </View>
             <AppText variant="body" tone="secondary" style={{ marginTop: 8 }}>
-              Garée n'a besoin d'aucun compte et ne dispose d'aucun serveur pour stocker vos
+              VéhiTrack n'a besoin d'aucun compte et ne dispose d'aucun serveur pour stocker vos
               informations personnelles.
             </AppText>
           </GlassCard>

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Garée",
+    "name": "VéhiTrack",
     "slug": "garee",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,8 +18,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.garee.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
+        "NSLocationWhenInUseUsageDescription": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
         "UIBackgroundModes": [],
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -45,7 +45,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture."
+          "locationWhenInUsePermission": "VéhiTrack utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture."
         }
       ],
       [

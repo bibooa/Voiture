@@ -70,7 +70,7 @@ export async function scheduleParkingReminder(
 
     const body = address
       ? `Votre voiture est garée près de ${address}.`
-      : 'Votre voiture est enregistrée. Ouvrez Garée pour la retrouver.';
+      : 'Votre voiture est enregistrée. Ouvrez VéhiTrack pour la retrouver.';
 
     return N.scheduleNotificationAsync({
       content: { title: '🚗 Voiture enregistrée', body, sound: true },

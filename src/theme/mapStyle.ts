@@ -1,5 +1,5 @@
 /**
- * Google Maps JSON style for the dark theme. Tuned to match Garée's deep-blue
+ * Google Maps JSON style for the dark theme. Tuned to match VéhiTrack's deep-blue
  * palette so the map blends into the app instead of glaring white at night.
  * Applied only on Android/Google provider standard maps in dark mode.
  */

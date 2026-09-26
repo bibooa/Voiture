@@ -1,5 +1,5 @@
 /**
- * Color palettes for Garée.
+ * Color palettes for VéhiTrack.
  *
  * The dark theme is the flagship experience: deep near-black blues with
  * translucent surfaces and discreet glows — never a mechanical inversion of

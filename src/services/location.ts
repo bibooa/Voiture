@@ -2,7 +2,7 @@ import * as Location from 'expo-location';
 import type { Coordinate } from '@/types';
 
 /**
- * Location service — the heart of Garée.
+ * Location service — the heart of VéhiTrack.
  *
  * Responsibilities:
  *  - permission handling (foreground only; we never track in the background)

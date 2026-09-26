@@ -1,4 +1,4 @@
-/** Shared domain types for Garée. */
+/** Shared domain types for VéhiTrack. */
 
 /** A single GPS fix with the metadata we care about. */
 export type Coordinate = {

@@ -62,7 +62,7 @@ export default function SettingsScreen() {
 
   const exportData = async () => {
     const payload = {
-      app: 'Garée',
+      app: 'VéhiTrack',
       exportedAt: new Date().toISOString(),
       history,
       favorites,
@@ -229,7 +229,7 @@ export default function SettingsScreen() {
         </Group>
 
         <AppText variant="caption" tone="muted" center style={{ marginTop: 8 }}>
-          Garée · v1.0.0 — Conçu avec une approche privacy-first.
+          VéhiTrack · v1.0.0 — Conçu avec une approche privacy-first.
         </AppText>
       </ScrollView>
     </ScreenContainer>

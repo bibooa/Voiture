@@ -43,7 +43,7 @@ export async function removeKey(key: StorageKey): Promise<void> {
   }
 }
 
-/** Wipe every piece of Garée data from the device (used by "delete all data"). */
+/** Wipe every piece of VéhiTrack data from the device (used by "delete all data"). */
 export async function clearAllData(): Promise<void> {
   try {
     await AsyncStorage.multiRemove(Object.values(StorageKeys));
