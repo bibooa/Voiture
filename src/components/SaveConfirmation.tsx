@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -64,8 +63,7 @@ export function SaveConfirmation({ visible, accuracy, address, onDone }: Props) 
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, styles.overlay, overlayStyle]}>
-      <BlurView intensity={40} tint={t.colors.blurTint} style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.background + 'AA' }]} />
+      <LinearGradient colors={t.colors.backdropGradient} style={StyleSheet.absoluteFill} />
 
       <Animated.View style={[styles.center, badgeStyle]}>
         <View style={styles.pulseWrap}>
