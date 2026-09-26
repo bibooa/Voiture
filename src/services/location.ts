@@ -1,6 +1,7 @@
 import * as Location from 'expo-location';
 import { Platform } from 'react-native';
 import type { RawFix } from '@/location/liveFilter';
+import { useSettingsStore } from '@/store/settingsStore';
 import {
   fuseSamples,
   stopReason,
@@ -241,12 +242,19 @@ export async function watchHeading(
 
 // ── reverse geocoding ──────────────────────────────────────────────────────
 
-/** Best-effort single-line address. Resolves to null offline or after timeout. */
+/**
+ * Best-effort single-line address. Resolves to null offline or after timeout.
+ *
+ * Privacy: the OS geocoder sends the coordinates to Google (Android) or Apple
+ * (iOS). This is the ONLY entry point, and it does nothing unless the user
+ * enabled "Adresse en ligne" in Settings.
+ */
 export async function reverseGeocode(
   latitude: number,
   longitude: number,
   timeoutMs = 5000
 ): Promise<string | null> {
+  if (!useSettingsStore.getState().onlineAddress) return null;
   const lookup = (async () => {
     try {
       const results = await Location.reverseGeocodeAsync({ latitude, longitude });

@@ -11,7 +11,7 @@ import {
   type Guidance,
 } from '@/location/guidance';
 import { compassReliability, normalizeDeg, type CompassReliability } from '@/location/heading';
-import { presentGuidance, type GuidanceView } from '@/location/presentation';
+import { freshnessOf, presentGuidance, type GuidanceView } from '@/location/presentation';
 import { PROFILE_INTERVAL_S } from '@/services/location';
 import type { LiveFix, ParkedLocation } from '@/types';
 import type { WalkingRoute } from '@/services/routing';
@@ -57,7 +57,6 @@ export function useCarGuidance(now: number): CarGuidance {
 
   // Arrival: advance the (hysteresis + dwell) state machine once per NEW fix.
   const interval = PROFILE_INTERVAL_S[active ?? 'map'];
-  const fixAge = fix ? (now - fix.timestamp) / 1000 : Infinity;
   let arrival = null as ArrivalMemory['state'] | null;
   if (guidance && car && fix) {
     if (!arrivalMemory || arrivalMemory.carId !== car.id) {
@@ -70,8 +69,8 @@ export function useCarGuidance(now: number): CarGuidance {
         fixTs: fix.timestamp,
       };
     }
-    // Never assert arrival from an outdated position.
-    arrival = fixAge <= Math.max(5, interval * 2.5) ? arrivalMemory.mem.state : null;
+    // Never assert arrival from an outdated position (same freshness rule as the UI).
+    arrival = freshnessOf(fix, now, interval).freshness === 'live' ? arrivalMemory.mem.state : null;
   }
 
   const compass = compassReliability(heading);

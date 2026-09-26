@@ -65,11 +65,11 @@ export const darkPalette: ColorScheme = {
   backdropGradient: ['#0B1024', '#070A14', '#05070F'],
 
   glass: 'rgba(255,255,255,0.06)',
-  glassStrong: 'rgba(255,255,255,0.10)',
-  glassBorder: 'rgba(255,255,255,0.16)',
+  glassStrong: 'rgba(255,255,255,0.05)',
+  glassBorder: 'rgba(255,255,255,0.11)',
   glassHighlight: 'rgba(255,255,255,0.22)',
   cardScrim: 'rgba(10,14,26,0.62)',
-  cardScrimStrong: 'rgba(9,13,24,0.80)',
+  cardScrimStrong: 'rgba(9,13,24,0.76)',
 
   primary: '#5B8CFF',
   primaryDeep: '#3E6BFF',

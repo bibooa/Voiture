@@ -13,6 +13,8 @@ type Props = ViewProps & {
   intensity?: number;
   /** Inner padding. */
   padded?: boolean;
+  /** Tighter padding for panels floating over a map. */
+  compact?: boolean;
   style?: ViewStyle | ViewStyle[];
   children?: React.ReactNode;
 };
@@ -28,6 +30,7 @@ export function GlassCard({
   radius,
   intensity = 40,
   padded = true,
+  compact,
   style,
   children,
   ...rest
@@ -37,17 +40,17 @@ export function GlassCard({
 
   const containerStyle: ViewStyle = {
     borderRadius: r,
-    borderWidth: StyleSheet.hairlineWidth * 2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: t.colors.glassBorder,
     overflow: 'hidden',
     shadowColor: t.colors.shadow,
-    shadowOpacity: t.colors.isDark ? 0.35 : 0.1,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowOpacity: t.colors.isDark ? 0.22 : 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   };
 
-  const inner: ViewStyle = { padding: padded ? t.spacing.lg : 0 };
+  const inner: ViewStyle = { padding: padded ? (compact ? t.spacing.md + 2 : t.spacing.lg) : 0 };
 
   // A frosted, legible surface: blur + an opaque-ish scrim so text stays
   // readable over any background (dark map OR bright satellite), topped with a

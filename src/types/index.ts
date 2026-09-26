@@ -74,8 +74,12 @@ export type Settings = {
   highAccuracy: boolean;
   /** How long to stabilise the position when saving the car. */
   stabilization: StabilizationMode;
-  /** Fetch real walking routes from an online routing service. */
+  /** Fetch real walking routes from an online routing service (opt-in). */
   onlineRouting: boolean;
+  /** Look up the street address of a saved position online (opt-in). */
+  onlineAddress: boolean;
+  /** Version of the privacy defaults the stored settings were migrated to. */
+  privacyVersion: number;
   parkingReminders: boolean;
   onboarded: boolean;
 };

@@ -7,8 +7,9 @@ import { GlassCard } from './GlassCard';
 import { Icon } from './Icon';
 import { formatAccuracy, gpsQuality, QUALITY_META, QUALITY_THRESHOLDS, type GpsQuality, type QualityTone } from '@/location/quality';
 
-export type { Freshness as GpsFreshness } from '@/location/presentation';
 import type { Freshness as GpsFreshness } from '@/location/presentation';
+
+export type { GpsFreshness };
 
 export function toneColor(t: Theme, tone: QualityTone): string {
   return tone === 'success'
@@ -113,7 +114,7 @@ export function GpsInfoModal({ visible, onClose }: { visible: boolean; onClose: 
 
             <AppText variant="body" tone="secondary" style={{ marginTop: 10, lineHeight: 21 }}>
               La précision dépend du GPS, des satellites visibles, du Wi-Fi, du réseau mobile et de
-              l'environnement. « ±5 m » signifie que la position réelle se trouve le plus souvent dans un
+              l’environnement. « ±5 m » signifie que la position réelle se trouve le plus souvent dans un
               rayon de 5 m.
             </AppText>
 
@@ -135,7 +136,7 @@ export function GpsInfoModal({ visible, onClose }: { visible: boolean; onClose: 
               La précision baisse souvent :
             </AppText>
             <AppText variant="caption" tone="secondary" style={{ marginTop: 4, lineHeight: 19 }}>
-              • à l'intérieur d'un bâtiment ou d'un parking souterrain{'\n'}• entre de grands immeubles{'\n'}
+              • à l’intérieur d’un bâtiment ou d’un parking souterrain{'\n'}• entre de grands immeubles{'\n'}
               • sous des arbres ou un ciel masqué
             </AppText>
 

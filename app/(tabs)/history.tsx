@@ -19,7 +19,8 @@ import { useTheme } from '@/theme';
 import { useCarStore } from '@/store/carStore';
 import { useFavoritesStore } from '@/store/favoritesStore';
 import { formatHistoryDate } from '@/utils/time';
-import { formatAccuracy, gpsQuality, QUALITY_META } from '@/location/quality';
+import { gpsQuality, QUALITY_META } from '@/location/quality';
+import { formatCarAccuracy } from '@/location/presentation';
 import { openWalkingDirections } from '@/services/navigation';
 import type { ParkedLocation } from '@/types';
 import { haptics } from '@/services/haptics';
@@ -146,7 +147,9 @@ export default function HistoryScreen() {
                       <AppText variant="caption" tone="muted" style={{ marginTop: 2 }}>
                         Précision :{' '}
                         <AppText variant="caption" weight="semibold" color={qualityColor(t, gpsQuality(item.accuracy))}>
-                          {formatAccuracy(item.accuracy)} · {QUALITY_META[gpsQuality(item.accuracy)].short}
+                          {item.adjusted
+                            ? formatCarAccuracy(item)
+                            : `${formatCarAccuracy(item)} · ${QUALITY_META[gpsQuality(item.accuracy)].short}`}
                         </AppText>
                         {item.forced ? '  · enregistrée malgré une précision faible' : ''}
                       </AppText>

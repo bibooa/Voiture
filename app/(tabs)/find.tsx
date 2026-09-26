@@ -181,45 +181,54 @@ export default function FindScreen() {
         onLayout={(e: LayoutChangeEvent) => setPanelH(e.nativeEvent.layout.height)}
         pointerEvents="box-none"
       >
-        <GlassCard strong>
-          <View style={styles.row}>
-            <View style={[styles.carTile, { backgroundColor: t.colors.car + '1F', borderColor: t.colors.car + '55' }]}>
-              <Icon name="car" size={22} color={t.colors.car} />
-            </View>
-            <View style={{ flex: 1, marginLeft: 12 }}>
-              <AppText variant="caption" tone="secondary" weight="semibold">
-                Votre voiture
-              </AppText>
-              <AppText variant="display" weight="bold" style={styles.distance}>
-                {v.distanceText ?? '—'}
-                {v.routeText ? (
-                  <AppText variant="callout" tone="secondary" weight="medium">
-                    {'  '}
-                    {v.routeText}
-                  </AppText>
-                ) : null}
-              </AppText>
-            </View>
-            {showArrow ? (
-              <DirectionArrow rotation={v.arrowRotation} mode={v.arrowMode} lowConfidence={v.lowConfidence} size={52} />
-            ) : null}
-          </View>
-
+        <GlassCard strong compact>
           {v.headline ? (
-            <View style={{ marginTop: 10 }}>
+            <View style={[styles.row, { marginBottom: 8 }]}>
+              {v.headlineTone === 'success' ? <Icon name="checkmark" size={17} color={t.colors.car} /> : null}
               <AppText
                 variant="callout"
                 weight="bold"
                 color={v.headlineTone === 'success' ? t.colors.car : t.colors.primary}
+                style={{ marginLeft: v.headlineTone === 'success' ? 6 : 0, flex: 1 }}
               >
                 {v.headline}
               </AppText>
-              {v.detail ? (
-                <AppText variant="caption" tone="secondary" style={styles.lh}>
-                  {v.detail}
+            </View>
+          ) : null}
+
+          {/* Distance and its margin, each under its own label: "≈ 3 m" is an
+              estimate, "±15 m" is the precision — never confused. */}
+          <View style={styles.row}>
+            <View style={{ flex: 1.15 }}>
+              <AppText variant="caption" tone="muted" style={styles.kicker}>
+                {v.distanceLabel}
+              </AppText>
+              <AppText variant="display" weight="bold" style={styles.distance}>
+                {v.distanceText ?? '—'}
+              </AppText>
+              {v.routeText ? (
+                <AppText variant="caption" tone="secondary" weight="medium">
+                  {v.routeText}
                 </AppText>
               ) : null}
             </View>
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" tone="muted" style={styles.kicker}>
+                {v.precisionLabel}
+              </AppText>
+              <AppText variant="display" weight="bold" style={[styles.distance, { color: t.colors.textSecondary }]}>
+                {v.precisionText ?? '—'}
+              </AppText>
+            </View>
+            {showArrow ? (
+              <DirectionArrow rotation={v.arrowRotation} mode={v.arrowMode} lowConfidence={v.lowConfidence} size={46} />
+            ) : null}
+          </View>
+
+          {v.headline && v.detail ? (
+            <AppText variant="caption" tone="secondary" style={[styles.lh, { marginTop: 6 }]}>
+              {v.detail}
+            </AppText>
           ) : v.detail ? (
             <AppText variant="caption" tone="secondary" style={[styles.lh, { marginTop: 8 }]}>
               {v.detail}
@@ -242,11 +251,6 @@ export default function FindScreen() {
                 Appui long sur la voiture pour la placer pile au bon endroit.
               </AppText>
             </View>
-          ) : null}
-          {v.uncertaintyText && !v.headline ? (
-            <AppText variant="caption" tone="muted" style={{ marginTop: 6 }}>
-              {v.uncertaintyText}
-            </AppText>
           ) : null}
 
           {v.warning ? (
@@ -319,19 +323,19 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 11 },
   bottom: { position: 'absolute', left: 12, right: 12, bottom: 0 },
   row: { flexDirection: 'row', alignItems: 'center' },
-  carTile: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  distance: { fontSize: 30, lineHeight: 36 },
+  kicker: { fontSize: 11, marginBottom: 1 },
+  distance: { fontSize: 26, lineHeight: 31 },
   lh: { lineHeight: 17, marginTop: 2 },
-  facts: { marginTop: 12, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row' },
+  facts: { marginTop: 10, paddingTop: 8, borderTopWidth: StyleSheet.hairlineWidth, flexDirection: 'row' },
   fact: { flex: 1 },
   factValue: { fontSize: 15 },
   factLabel: { fontSize: 11, marginTop: 1 },
   hint: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
-  actions: { flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 10 },
+  actions: { flexDirection: 'row', alignItems: 'center', marginTop: 12, gap: 10 },
   shareBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 16,
+    width: 50,
+    height: 50,
+    borderRadius: 15,
     borderWidth: StyleSheet.hairlineWidth * 2,
     alignItems: 'center',
     justifyContent: 'center',

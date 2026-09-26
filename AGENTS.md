@@ -40,6 +40,7 @@ npm install
 npx expo start -c      # le fondateur ouvre l'appli dans Expo Go
 npm test               # vitest — doit rester vert
 npm run typecheck      # tsc --noEmit — doit rester à 0 erreur
+npm run lint           # ESLint 9 (eslint.config.js) — doit rester à 0 erreur
 ```
 
 ## Git

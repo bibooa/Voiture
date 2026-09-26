@@ -124,7 +124,7 @@ function Acquiring({ progress, onCancel }: { progress: StabilizationProgress | n
           </View>
         ) : !est ? (
           <AppText variant="caption" tone="muted" style={{ marginTop: 12 }}>
-            Recherche des satellites… Cela peut prendre plus de temps à l'intérieur.
+            Recherche des satellites… Cela peut prendre plus de temps à l’intérieur.
           </AppText>
         ) : null}
       </GlassCard>
@@ -186,7 +186,7 @@ function Review({
         <View style={[styles.sep, { backgroundColor: t.colors.glassBorder }]} />
         <AppText variant="caption" tone="secondary" style={{ lineHeight: 18 }}>
           Les bâtiments, parkings couverts, arbres ou un ciel masqué réduisent la précision. Si
-          possible, rapprochez-vous d'un espace dégagé.
+          possible, rapprochez-vous d’un espace dégagé.
         </AppText>
       </GlassCard>
 

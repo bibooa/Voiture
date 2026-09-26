@@ -9,6 +9,8 @@ import {
 } from '@/location/guidance';
 import { presentGuidance, type PresentInput } from '@/location/presentation';
 import { gpsQuality } from '@/location/quality';
+import { framingHalfSpan } from '@/location/framing';
+import { pickScale } from '@/location/scale';
 import { offsetMeters } from '@/utils/geo';
 import { TRUTH } from './helpers';
 
@@ -33,24 +35,30 @@ function scenario(acc: number, distance: number, seconds = 4, carAcc = acc) {
   return { g, view: presentGuidance(input) };
 }
 
-const ACCURACIES = [3, 5, 10, 15, 30];
-const DISTANCES = [2, 12, 40, 150];
+const ACCURACIES = [3, 5, 8, 10, 12, 15, 20, 30];
+const DISTANCES = [1, 3, 8, 15, 50, 100, 500];
 
-describe('Consistency across accuracies ±3 / ±5 / ±10 / ±15 / ±30 m', () => {
+describe('Consistency across accuracies ±3…±30 m and distances 1…500 m', () => {
   for (const acc of ACCURACIES) {
     for (const d of DISTANCES) {
       it(`±${acc} m at ${d} m`, () => {
         const { g, view } = scenario(acc, d);
         const U = Math.ceil(Math.sqrt(2) * acc);
 
-        // Distance is always an estimate, never a bare number.
+        // Distance is always an estimate, under its own label.
         expect(view.distanceText!.startsWith('≈ ')).toBe(true);
+        expect(view.distanceLabel).toBe('Distance estimée');
         // Real accuracies are always shown as values.
         expect(view.userAccuracyText).toBe(`±${acc} m`);
         expect(view.carAccuracyText).toBe(`±${acc} m`);
-        // Combined uncertainty = √(car² + user²), shown explicitly.
+        // Combined uncertainty = √(car² + user²), rounded UP, under its own label.
         expect(g.uncertainty).toBe(U);
-        expect(view.uncertaintyText).toBe(`Incertitude de position : ±${U} m`);
+        expect(view.precisionLabel).toBe('Précision de localisation');
+        expect(view.precisionText).toBe(`±${U} m`);
+        // The two figures can never be confused: "≈" for the distance, "±" for the precision.
+        expect(view.distanceText).not.toContain('±');
+        expect(view.precisionText!.startsWith('±')).toBe(true);
+        expect(view.withinMargin).toBe(g.distance <= U);
         // No invented travel time without a route.
         expect(view.routeText).toBeNull();
 
@@ -75,19 +83,45 @@ describe('Consistency across accuracies ±3 / ±5 / ±10 / ±15 / ±30 m', () =>
   }
 
   it('tiers qualify but never replace the value', () => {
-    expect(ACCURACIES.map((a) => gpsQuality(a))).toEqual(['excellent', 'excellent', 'good', 'fair', 'poor']);
+    expect(ACCURACIES.map((a) => gpsQuality(a))).toEqual([
+      'excellent', 'excellent', 'good', 'good', 'fair', 'fair', 'fair', 'poor',
+    ]);
     expect(scenario(30, 150).view.warning?.text).toContain('±30 m');
   });
+});
 
-  it('the reported case: car ±12 m, user ±9 m, 2 m apart', () => {
-    const { view } = scenario(9, 2, 4, 12);
-    expect(view.distanceText).toBe('≈ 2 m');
-    expect(view.carAccuracyText).toBe('±12 m');
-    expect(view.userAccuracyText).toBe('±9 m');
-    expect(view.uncertaintyText).toBe('Incertitude de position : ±15 m');
+describe('Combined cases', () => {
+  it('car ±12 m / user ±8 m, 3 m apart: "≈ 3 m" is never a 3 m precision', () => {
+    const { view } = scenario(8, 3, 4, 12);
     expect(view.headline).toBe('Vous êtes probablement arrivé');
+    expect(view.distanceLabel).toBe('Distance estimée');
+    expect(view.distanceText).toBe('≈ 3 m');
+    expect(view.precisionLabel).toBe('Précision de localisation');
+    expect(view.precisionText).toBe('±15 m'); // √(144 + 64) = 14.4 → 15
+    expect(view.withinMargin).toBe(true);
+    expect(view.carAccuracyText).toBe('±12 m');
+    expect(view.userAccuracyText).toBe('±8 m');
     expect(view.detail).toBe('Votre voiture se trouve probablement dans un rayon d’environ 15 m.');
     expect(view.directionText).toBeNull();
+  });
+  it('car ±5 m / user ±5 m → ±8 m, arrival possible', () => {
+    const { g, view } = scenario(5, 3, 4, 5);
+    expect(g.uncertainty).toBe(8);
+    expect(view.precisionText).toBe('±8 m');
+    expect(view.headline).toBe('Vous êtes probablement arrivé');
+  });
+  it('car ±20 m / user ±15 m → ±25 m, too poor to confirm arrival', () => {
+    const { g, view } = scenario(15, 3, 10, 20);
+    expect(g.uncertainty).toBe(25);
+    expect(view.headline).toBe('Votre voiture est dans les environs');
+    expect(view.detail).toContain('25 m');
+    expect(view.arrowMode).toBe('none');
+  });
+  it('unstable position: the observed scatter widens the precision', () => {
+    const car = { ...TRUTH, accuracy: 5 };
+    const user = { ...offsetMeters(TRUTH, 0, 30), accuracy: 5 };
+    expect(computeGuidance(user, car).uncertainty).toBe(8);
+    expect(computeGuidance({ ...user, scatter: 18 }, car).uncertainty).toBe(19); // √(25 + 324)
   });
 });
 
@@ -166,12 +200,26 @@ describe('Freshness wording', () => {
       route: { distance: 127, duration: 100 },
     });
     expect(v.distanceText).toBe('≈ 125 m');
+    expect(v.distanceLabel).toBe('Distance à pied');
     expect(v.routeText).toBe('2 min à pied');
   });
+  it('old position: stale, direction flagged approximate', () => {
+    const v = at(8);
+    expect(v.freshness).toBe('stale');
+    expect(v.lowConfidence).toBe(true);
+  });
+  it('lost signal: explicit warning, badge never shows a fresh value', () => {
+    const v = at(45);
+    expect(v.freshnessText).toMatch(/^Signal GPS perdu · dernière position il y a /);
+    expect(v.warning?.tone).toBe('danger');
+  });
+  it('no route (disabled, unavailable or offline) → no travel time, never "< 1 min"', () => {
+    const v = at(0);
+    expect(v.routeText).toBeNull();
+    expect(v.distanceLabel).toBe('Distance estimée');
+    expect(JSON.stringify(v)).not.toMatch(/min à pied|< ?1 min/);
+  });
 });
-
-import { framingHalfSpan } from '@/location/framing';
-import { pickScale } from '@/location/scale';
 
 describe('Map framing keeps accuracy circles proportionate', () => {
   for (const acc of ACCURACIES) {

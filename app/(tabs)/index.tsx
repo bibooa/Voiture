@@ -51,7 +51,7 @@ export default function HomeScreen() {
   const [noteFor, setNoteFor] = useState<string | null>(null);
   const [camHeading, setCamHeading] = useState(0);
 
-  const headerH = insets.top + 64;
+  const headerH = insets.top + 46;
   const car = g.car;
 
   return (
@@ -74,19 +74,14 @@ export default function HomeScreen() {
       />
       <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <LinearGradient colors={t.colors.primaryGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logo}>
-          <Icon name="pin" size={18} color="#fff" />
+          <Icon name="pin" size={15} color="#fff" />
         </LinearGradient>
-        <View style={{ flex: 1, marginLeft: 11 }}>
-          <AppText variant="headline" weight="bold">
-            {APP_NAME}
-          </AppText>
-          <AppText variant="caption" tone="secondary">
-            Votre voiture, toujours à portée.
-          </AppText>
-        </View>
-        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Réglages" hitSlop={8}>
-          <View style={[styles.iconBtn, { backgroundColor: t.colors.cardScrimStrong, borderColor: t.colors.glassBorder }]}>
-            <Icon name="settings" size={19} color={t.colors.text} />
+        <AppText variant="callout" weight="bold" style={{ flex: 1, marginLeft: 9 }}>
+          {APP_NAME}
+        </AppText>
+        <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Réglages" hitSlop={10}>
+          <View style={[styles.iconBtn, { backgroundColor: t.colors.cardScrim, borderColor: t.colors.glassBorder }]}>
+            <Icon name="settings" size={16} color={t.colors.textSecondary} />
           </View>
         </Pressable>
       </View>
@@ -126,7 +121,7 @@ export default function HomeScreen() {
           </GlassCard>
         ) : null}
 
-        <GlassCard strong>
+        <GlassCard strong compact>
           {car ? (
             <>
               <Pressable onPress={() => router.push('/find')} style={styles.row}>
@@ -161,7 +156,7 @@ export default function HomeScreen() {
                 </Pressable>
               ) : null}
 
-              <PrimaryButton label="RETROUVER MA VOITURE" icon="navigate" onPress={() => router.push('/find')} style={{ marginTop: 14 }} />
+              <PrimaryButton label="RETROUVER MA VOITURE" icon="navigate" onPress={() => router.push('/find')} style={{ marginTop: 12 }} />
               <Pressable onPress={save.start} style={styles.textBtn} hitSlop={6}>
                 <Icon name="pin" size={15} color={t.colors.textSecondary} />
                 <AppText variant="callout" weight="semibold" tone="secondary" style={{ marginLeft: 6 }}>
@@ -232,28 +227,52 @@ function DistanceSummary({ g }: { g: ReturnType<typeof useCarGuidance> }) {
   return (
     <View style={[styles.summary, { borderColor: t.colors.glassBorder }]}>
       {v.headline ? (
-        <AppText variant="callout" weight="bold" color={v.headlineTone === 'success' ? t.colors.car : t.colors.primary}>
-          {v.headline}
-          {v.distanceText ? (
-            <AppText variant="callout" tone="secondary" weight="medium">
-              {'  ·  '}
-              {v.distanceText}
-            </AppText>
-          ) : null}
-        </AppText>
-      ) : v.distanceText ? (
-        <AppText variant="headline" weight="bold">
-          {v.distanceText}
-          <AppText variant="callout" tone="secondary" weight="medium">
-            {v.routeText ? `  ·  ${v.routeText}` : '  ·  à vol d’oiseau'}
+        <View style={[styles.row, { marginBottom: 8 }]}>
+          {v.headlineTone === 'success' ? <Icon name="checkmark" size={16} color={t.colors.car} /> : null}
+          <AppText
+            variant="callout"
+            weight="bold"
+            color={v.headlineTone === 'success' ? t.colors.car : t.colors.primary}
+            style={{ marginLeft: v.headlineTone === 'success' ? 6 : 0, flex: 1 }}
+          >
+            {v.headline}
           </AppText>
-        </AppText>
+        </View>
+      ) : null}
+      {v.distanceText ? (
+        // Distance and its margin side by side, each under its own label, so
+        // "≈ 3 m" can never be read as a 3 m GPS precision.
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="caption" tone="muted" style={styles.kicker}>
+              {v.distanceLabel}
+            </AppText>
+            <AppText variant="headline" weight="bold">
+              {v.distanceText}
+              {v.routeText ? (
+                <AppText variant="caption" tone="secondary" weight="medium">
+                  {`  ${v.routeText}`}
+                </AppText>
+              ) : null}
+            </AppText>
+          </View>
+          {v.precisionText ? (
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" tone="muted" style={styles.kicker}>
+                {v.precisionLabel}
+              </AppText>
+              <AppText variant="headline" weight="bold">
+                {v.precisionText}
+              </AppText>
+            </View>
+          ) : null}
+        </View>
       ) : (
         <AppText variant="caption" tone="secondary">
           {v.freshnessText}
         </AppText>
       )}
-      <AppText variant="caption" tone="secondary" style={{ marginTop: 3 }}>
+      <AppText variant="caption" tone="secondary" style={{ marginTop: 6 }}>
         Voiture{' '}
         <AppText variant="caption" weight="bold" color={qualityColor(t, v.carTier)}>
           {v.carAccuracyText}
@@ -275,11 +294,11 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0 },
   header: { position: 'absolute', left: 0, right: 0, top: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  logo: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth,
@@ -289,7 +308,8 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 12, right: 12, bottom: 0 },
   row: { flexDirection: 'row', alignItems: 'center' },
   carTile: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  summary: { marginTop: 12, paddingTop: 12, borderTopWidth: StyleSheet.hairlineWidth },
+  summary: { marginTop: 10, paddingTop: 10, borderTopWidth: StyleSheet.hairlineWidth },
+  kicker: { fontSize: 11, marginBottom: 1 },
   note: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -299,5 +319,5 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
   },
-  textBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 14, paddingBottom: 2 },
+  textBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingTop: 10, paddingBottom: 0 },
 });

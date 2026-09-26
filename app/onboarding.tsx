@@ -127,12 +127,12 @@ export default function Onboarding() {
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Icon name="shield" size={18} color={t.colors.success} />
                   <AppText variant="callout" weight="semibold" style={{ marginLeft: 8 }}>
-                    Confidentialité d'abord
+                    Confidentialité d’abord
                   </AppText>
                 </View>
                 <AppText variant="body" tone="secondary" style={{ marginTop: 6 }}>
-                  Votre position n'est utilisée qu'au moment où vous enregistrez ou retrouvez votre
-                  voiture, et reste stockée uniquement sur votre téléphone. Rien n'est envoyé sur un
+                  Votre position n’est utilisée qu’au moment où vous enregistrez ou retrouvez votre
+                  voiture, et reste stockée uniquement sur votre téléphone. Rien n’est envoyé sur un
                   serveur.
                 </AppText>
               </GlassCard>

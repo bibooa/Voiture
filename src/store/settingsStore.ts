@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Settings, ThemeMode, MapType } from '@/types';
 import { StorageKeys, readJSON, writeJSON } from '@/services/storage';
 import { setHapticsEnabled } from '@/services/haptics';
+import { migrateSettings, PRIVACY_VERSION } from './settingsMigration';
 
 export const DEFAULT_SETTINGS: Settings = {
   themeMode: 'auto',
@@ -12,7 +13,10 @@ export const DEFAULT_SETTINGS: Settings = {
   headingUpMap: true,
   highAccuracy: true,
   stabilization: 'balanced',
-  onlineRouting: true,
+  // Privacy: nothing leaves the phone unless the user opts in (see settingsMigration).
+  onlineRouting: false,
+  onlineAddress: false,
+  privacyVersion: PRIVACY_VERSION,
   parkingReminders: false,
   onboarded: false,
 };
@@ -44,10 +48,11 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   hydrated: false,
 
   hydrate: async () => {
-    const stored = await readJSON<Settings>(StorageKeys.settings, DEFAULT_SETTINGS);
-    const merged = { ...DEFAULT_SETTINGS, ...stored };
+    const stored = await readJSON<Partial<Settings> | null>(StorageKeys.settings, null);
+    const { settings: merged, changed } = migrateSettings(stored, DEFAULT_SETTINGS);
     setHapticsEnabled(merged.haptics);
     set({ ...merged, hydrated: true });
+    if (changed && stored) persist(merged);
   },
 
   set: (key, value) => {

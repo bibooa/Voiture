@@ -16,15 +16,19 @@ const SECTIONS = [
   },
   {
     title: 'Aucune collecte de données',
-    body: "Aucune donnée de localisation n'est envoyée à VéhiTrack. Il n'y a ni compte, ni analytics de localisation, ni publicité, ni revente de données.",
+    body: "Aucune donnée de localisation n'est envoyée à VéhiTrack. Il n'y a ni compte, ni analytics de localisation, ni publicité, ni revente de données. Les deux services en ligne ci-dessous sont désactivés tant que vous ne les activez pas.",
   },
   {
-    title: 'Itinéraires piétons (optionnel)',
-    body: "Si l'option « Itinéraires piétons en ligne » est activée, seuls le point de départ et le point d'arrivée d'un trajet sont envoyés au service de calcul d'itinéraire OpenStreetMap (routing.openstreetmap.de), uniquement lorsque vous consultez la position de votre voiture. Désactivez l'option dans les Réglages pour que rien ne quitte votre téléphone : la distance à vol d'oiseau est alors affichée.",
+    title: 'Itinéraires piétons (désactivé par défaut)',
+    body: "Uniquement si vous activez « Itinéraires piétons en ligne » dans les Réglages : votre position et celle de votre voiture sont envoyées au service de calcul d'itinéraire OpenStreetMap (routing.openstreetmap.de), lorsque vous consultez la position de votre voiture. Sinon, la distance à vol d'oiseau est calculée sur le téléphone.",
   },
   {
-    title: 'Adresses approximatives',
-    body: "Lorsque c'est possible, une adresse approximative est calculée à partir de vos coordonnées via le service de géocodage du système d'exploitation, afin de rendre l'historique plus lisible.",
+    title: 'Adresses (désactivé par défaut)',
+    body: "Uniquement si vous activez « Adresse de la position en ligne » dans les Réglages : les coordonnées d'une position enregistrée sont envoyées au service d'adresses de votre téléphone (Google sur Android, Apple sur iOS) pour afficher le nom de la rue.",
+  },
+  {
+    title: 'Fond de carte',
+    body: "La carte est fournie par Google Maps (Android) ou Apple Plans (iOS). Pour afficher la zone que vous regardez, ce fournisseur reçoit les images de carte demandées, comme dans toute application de cartes. Vos positions enregistrées ne lui sont pas transmises par VéhiTrack.",
   },
   {
     title: 'Navigation externe',
@@ -62,7 +66,7 @@ export default function PrivacyScreen() {
               </AppText>
             </View>
             <AppText variant="body" tone="secondary" style={{ marginTop: 8 }}>
-              VéhiTrack n'a besoin d'aucun compte et ne dispose d'aucun serveur pour stocker vos
+              VéhiTrack n’a besoin d’aucun compte et ne dispose d’aucun serveur pour stocker vos
               informations personnelles.
             </AppText>
           </GlassCard>

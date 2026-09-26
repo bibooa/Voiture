@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Alert, ScrollView, Share, Linking } from 'react-native';
+import { Alert, ScrollView, Share, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -42,7 +42,6 @@ function Group({ title, children, delay = 0 }: { title: string; children: React.
 }
 
 export default function SettingsScreen() {
-  const t = useTheme();
   const router = useRouter();
   const s = useSettingsStore();
   const history = useCarStore((st) => st.history);
@@ -140,8 +139,14 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="walk"
             label="Itinéraires piétons en ligne"
-            description="Calcule un vrai trajet à pied (OpenStreetMap). Seuls le départ et l’arrivée sont envoyés. Désactivé : distance à vol d’oiseau, tout reste sur l’appareil."
+            description="Désactivé par défaut. Activé : votre position et celle de la voiture sont envoyées à OpenStreetMap (routing.openstreetmap.de) pour calculer un vrai trajet à pied. Désactivé : distance à vol d’oiseau, rien ne quitte le téléphone."
             right={<Toggle value={s.onlineRouting} onValueChange={(v) => s.set('onlineRouting', v)} />}
+          />
+          <SettingsRow
+            icon="pin"
+            label="Adresse de la position en ligne"
+            description="Désactivé par défaut. Activé : les coordonnées de chaque position enregistrée sont envoyées au service d’adresses du téléphone (Google sur Android, Apple sur iOS) pour afficher la rue."
+            right={<Toggle value={s.onlineAddress} onValueChange={(v) => s.set('onlineAddress', v)} />}
           />
           <SettingsRow
             icon="lock"
@@ -268,5 +273,3 @@ export default function SettingsScreen() {
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({});

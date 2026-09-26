@@ -29,7 +29,8 @@ export function MapControls({
   headingUp,
 }: Props) {
   const t = useTheme();
-  const surface = { backgroundColor: t.colors.cardScrimStrong, borderColor: t.colors.glassBorder };
+  // Discreet: lighter scrim, small visuals, touch area enlarged by hitSlop.
+  const surface = { backgroundColor: t.colors.cardScrim, borderColor: t.colors.glassBorder };
 
   const tap = (fn?: () => void) => () => {
     haptics.selection();
@@ -52,11 +53,11 @@ export function MapControls({
       </Pressable>
 
       <View style={[styles.group, surface]}>
-        <Pressable onPress={tap(onZoomIn)} style={styles.btn} accessibilityLabel="Zoomer" hitSlop={4}>
-          <Icon name="add" size={20} color={t.colors.text} />
+        <Pressable onPress={tap(onZoomIn)} style={styles.btn} accessibilityLabel="Zoomer" hitSlop={6}>
+          <Icon name="add" size={17} color={t.colors.text} />
         </Pressable>
         <View style={[styles.sep, { backgroundColor: t.colors.glassBorder }]} />
-        <Pressable onPress={tap(onZoomOut)} style={styles.btn} accessibilityLabel="Dézoomer" hitSlop={4}>
+        <Pressable onPress={tap(onZoomOut)} style={styles.btn} accessibilityLabel="Dézoomer" hitSlop={6}>
           <View style={[styles.minus, { backgroundColor: t.colors.text }]} />
         </Pressable>
       </View>
@@ -65,9 +66,9 @@ export function MapControls({
         onPress={tap(onLocate)}
         style={[styles.single, surface, following && { borderColor: t.colors.primary }]}
         accessibilityLabel="Recentrer"
-        hitSlop={4}
+        hitSlop={6}
       >
-        <Icon name="locate" size={19} color={following ? t.colors.primary : t.colors.text} />
+        <Icon name="locate" size={16} color={following ? t.colors.primary : t.colors.text} />
       </Pressable>
     </View>
   );
@@ -76,31 +77,31 @@ export function MapControls({
 const styles = StyleSheet.create({
   col: { gap: 8, alignItems: 'center' },
   compass: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  group: { width: 34, borderRadius: 10, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
+  single: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth * 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  group: { width: 40, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
-  single: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth * 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  btn: { height: 40, alignItems: 'center', justifyContent: 'center' },
+  btn: { height: 34, alignItems: 'center', justifyContent: 'center' },
   sep: { height: StyleSheet.hairlineWidth, marginHorizontal: 8 },
-  minus: { width: 13, height: 2, borderRadius: 1 },
+  minus: { width: 11, height: 2, borderRadius: 1 },
   needleN: {
     width: 0,
     height: 0,
     borderLeftWidth: 4,
     borderRightWidth: 4,
-    borderBottomWidth: 9,
+    borderBottomWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     height: 0,
     borderLeftWidth: 4,
     borderRightWidth: 4,
-    borderTopWidth: 9,
+    borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },

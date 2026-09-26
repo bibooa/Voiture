@@ -2,7 +2,7 @@
 
 **Retrouvez votre voiture, en un geste.**
 
-Garée est une application mobile **iOS & Android** (React Native + Expo) qui mémorise l'endroit exact où vous vous garez et vous guide pour la retrouver. Design premium (glassmorphism, profondeur, micro-animations), **100 % privacy-first** : vos positions ne quittent jamais votre téléphone.
+Garée est une application mobile **iOS & Android** (React Native + Expo) qui mémorise l'endroit exact où vous vous garez et vous guide pour la retrouver. Design premium (glassmorphism, profondeur, micro-animations), **privacy-first** : par défaut, vos positions ne quittent pas votre téléphone (les services en ligne sont facultatifs et désactivés par défaut).
 
 ---
 
@@ -107,6 +107,11 @@ En **Expo Go** la carte fonctionne sans configuration. Pour un **build Android a
 - La position n'est lue **qu'au moment** de l'enregistrement ou de la consultation de la carte.
 - **Jamais** de suivi en arrière-plan.
 - Suppression totale des données possible à tout moment (Réglages → Confidentialité).
+- **Services en ligne désactivés par défaut** (activables dans Réglages, chacun expliqué) :
+  - *Itinéraires piétons en ligne* → départ + arrivée envoyés à `routing.openstreetmap.de` ;
+  - *Adresse de la position en ligne* → coordonnées envoyées au géocodeur du système (Google / Apple).
+  Les anciens réglages où l'itinéraire était actif par défaut sont remis à « désactivé » (`src/store/settingsMigration.ts`).
+- Seule exception inhérente : le fond de carte (Google Maps / Apple Plans) charge les images de la zone affichée.
 
 ---
 
@@ -138,6 +143,7 @@ En **Expo Go** la carte fonctionne sans configuration. Pour un **build Android a
 - Fraîcheur affichée (« il y a 3 s »), états « GPS en attente » / « Signal perdu ».
 
 **Itinéraire piéton** — `src/services/routing.ts`
+- **Désactivé par défaut** (Réglages → « Itinéraires piétons en ligne »). Aucune requête tant que l'utilisateur ne l'active pas.
 - Serveur OSRM profil *foot* (OpenStreetMap par défaut, `ROUTING_BASE_URL` pour votre propre instance).
 - Hors ligne ou sans itinéraire : « distance directe », **sans temps de trajet inventé**.
 

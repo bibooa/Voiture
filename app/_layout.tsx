@@ -1,6 +1,6 @@
-import 'react-native-gesture-handler';
-import React, { useEffect, useState } from 'react';
+// Must stay the first import: the gesture handler registers itself on load.
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';

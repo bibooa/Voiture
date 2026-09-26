@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   gradient: {
-    height: 54,
+    height: 50,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

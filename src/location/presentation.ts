@@ -47,22 +47,39 @@ export type GuidanceView = {
   userTier: GpsQuality;
   carAccuracyText: string;
   carTier: GpsQuality;
-  /** "≈ 12 m", or null when unknown. */
+  /** "≈ 12 m", or null when unknown. ALWAYS shown under `distanceLabel`. */
   distanceText: string | null;
+  /** "Distance estimée" (straight line) or "Distance à pied" (real route). */
+  distanceLabel: string;
   distanceKind: 'route' | 'direct' | null;
+  /**
+   * True when the distance is smaller than the combined uncertainty: the figure
+   * is then only an estimate inside the margin, never a precision.
+   */
+  withinMargin: boolean;
   /** "2 min à pied" — only from a real route. */
   routeText: string | null;
   headline: string | null;
   detail: string | null;
   headlineTone: 'success' | 'accent' | null;
-  /** "Incertitude de position : ±15 m". */
-  uncertaintyText: string | null;
+  /** Always "Précision de localisation" — the label of `precisionText`. */
+  precisionLabel: string;
+  /** Combined uncertainty on the distance, "±15 m" (null when unknown). */
+  precisionText: string | null;
   directionText: string | null;
   arrowMode: ArrowMode;
   arrowRotation: number;
   lowConfidence: boolean;
   warning: { text: string; tone: QualityTone; icon: 'warning' | 'compass' | 'accuracy' } | null;
 };
+
+/** Accuracy of a saved car, as shown everywhere (Find, Home, History). */
+export function formatCarAccuracy(car: { accuracy: number | null; adjusted?: boolean } | null | undefined): string {
+  if (car?.adjusted) return 'placée à la main';
+  return formatAccuracy(car?.accuracy);
+}
+
+export const PRECISION_LABEL = 'Précision de localisation';
 
 function formatAge(s: number): string {
   if (s < 90) return `${s} s`;
@@ -171,15 +188,18 @@ export function presentGuidance(i: PresentInput): GuidanceView {
     freshnessText,
     userAccuracyText: formatAccuracy(i.fix?.accuracy),
     userTier,
-    carAccuracyText: i.car?.adjusted ? 'placée à la main' : formatAccuracy(i.car?.accuracy),
+    carAccuracyText: formatCarAccuracy(i.car),
     carTier: gpsQuality(i.car?.accuracy),
     distanceText,
+    distanceLabel: distanceKind === 'route' ? 'Distance à pied' : 'Distance estimée',
     distanceKind,
+    withinMargin: !!g && u != null && g.distance <= u,
     routeText,
     headline,
     detail,
     headlineTone,
-    uncertaintyText: u != null ? `Incertitude de position : ±${u} m` : null,
+    precisionLabel: PRECISION_LABEL,
+    precisionText: u != null ? `±${u} m` : null,
     directionText,
     arrowMode,
     arrowRotation,

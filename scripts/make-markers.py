@@ -40,41 +40,66 @@ def shadow(img, radius, alpha=90, dy=0.0):
     return out
 
 
+def label_font(size):
+    for name in ('arialbd.ttf', 'seguisb.ttf', 'DejaVuSans-Bold.ttf'):
+        for folder in (os.path.join(os.environ.get('WINDIR', 'C:/Windows'), 'Fonts'), '/usr/share/fonts/truetype/dejavu'):
+            p = os.path.join(folder, name)
+            if os.path.exists(p):
+                return ImageFont.truetype(p, size)
+    return ImageFont.load_default()
+
+
+def draw_label(img, text, cx, cy, scale):
+    """Étiquette blanche détourée de sombre : lisible sur toute carte."""
+    d = ImageDraw.Draw(img)
+    font = label_font(int(9.5 * scale * SS))
+    d.text((cx, cy), text, font=font, fill=WHITE + (255,), anchor='mm',
+           stroke_width=int(2.2 * scale * SS), stroke_fill=(8, 12, 24, 235))
+
+
+# Les images sont SYMÉTRIQUES verticalement : le centre du disque est au centre
+# de l'image, donc anchor {x: 0.5, y: 0.5} reste exact malgré l'étiquette.
+
 def car_marker(scale):
-    box = 52 * scale * SS
-    c = box / 2
-    img = Image.new('RGBA', (box, box), (0, 0, 0, 0))
+    W, H = 76, 84
+    w, h = W * scale * SS, H * scale * SS
+    cx, cy = w / 2, h / 2
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     # halo discret
     r = 24 * scale * SS
-    d.ellipse([c - r, c - r, c + r, c + r], fill=CAR + (46,))
-    shape = Image.new('RGBA', (box, box), (0, 0, 0, 0))
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CAR + (46,))
+    shape = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     ds = ImageDraw.Draw(shape)
     r = 17 * scale * SS
-    ds.ellipse([c - r, c - r, c + r, c + r], fill=WHITE + (255,))
+    ds.ellipse([cx - r, cy - r, cx + r, cy + r], fill=WHITE + (255,))
     r = 14.5 * scale * SS
-    ds.ellipse([c - r, c - r, c + r, c + r], fill=CAR + (255,))
+    ds.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CAR + (255,))
     font = ImageFont.truetype(os.path.join(ICONS, 'Fonts', 'MaterialCommunityIcons.ttf'), int(19 * scale * SS))
-    ds.text((c, c), car_glyph(), font=font, fill=WHITE + (255,), anchor='mm')
+    ds.text((cx, cy), car_glyph(), font=font, fill=WHITE + (255,), anchor='mm')
     img.alpha_composite(shadow(shape, 2 * scale * SS, 110, 1 * scale * SS))
-    return img.resize((52 * scale, 52 * scale), Image.LANCZOS)
+    # « VOITURE » AU-DESSUS (celui de « VOUS » est dessous : pas de collision)
+    draw_label(img, 'VOITURE', cx, cy - 33 * scale * SS, scale)
+    return img.resize((W * scale, H * scale), Image.LANCZOS)
 
 
 def user_marker(scale):
-    box = 28 * scale * SS
-    c = box / 2
-    img = Image.new('RGBA', (box, box), (0, 0, 0, 0))
+    W, H = 48, 64
+    w, h = W * scale * SS, H * scale * SS
+    cx, cy = w / 2, h / 2
+    img = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     d = ImageDraw.Draw(img)
     r = 13 * scale * SS
-    d.ellipse([c - r, c - r, c + r, c + r], fill=USER + (51,))
-    shape = Image.new('RGBA', (box, box), (0, 0, 0, 0))
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=USER + (51,))
+    shape = Image.new('RGBA', (w, h), (0, 0, 0, 0))
     ds = ImageDraw.Draw(shape)
     r = 8.5 * scale * SS
-    ds.ellipse([c - r, c - r, c + r, c + r], fill=WHITE + (255,))
+    ds.ellipse([cx - r, cy - r, cx + r, cy + r], fill=WHITE + (255,))
     r = 6 * scale * SS
-    ds.ellipse([c - r, c - r, c + r, c + r], fill=USER + (255,))
+    ds.ellipse([cx - r, cy - r, cx + r, cy + r], fill=USER + (255,))
     img.alpha_composite(shadow(shape, 1.5 * scale * SS, 100, 0.5 * scale * SS))
-    return img.resize((28 * scale, 28 * scale), Image.LANCZOS)
+    draw_label(img, 'VOUS', cx, cy + 22 * scale * SS, scale)
+    return img.resize((W * scale, H * scale), Image.LANCZOS)
 
 
 def heading_cone(scale):

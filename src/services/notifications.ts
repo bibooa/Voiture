@@ -14,7 +14,6 @@ import { Platform } from 'react-native';
 const CHANNEL_ID = 'parking-reminders';
 let handlerConfigured = false;
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 type Notifications = typeof import('expo-notifications');
 function getNotifications(): Notifications {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
