@@ -2,8 +2,7 @@ import React from 'react';
 import { ScrollView, View, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { AmbientBackground, GlassCard, AppText } from '@/components';
+import { AmbientBackground, GlassCard, AppText, Icon } from '@/components';
 import { useTheme } from '@/theme';
 
 const SECTIONS = [
@@ -45,14 +44,19 @@ export default function PrivacyScreen() {
           <AppText variant="title">Confidentialité</AppText>
           <Pressable onPress={() => router.back()} accessibilityLabel="Fermer" hitSlop={10}>
             <View style={[styles.close, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
-              <Ionicons name="close" size={20} color={t.colors.text} />
+              <Icon name="close" size={20} color={t.colors.text} />
             </View>
           </Pressable>
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40 }}>
           <GlassCard strong style={{ marginBottom: 16 }}>
-            <AppText variant="headline">🔒 Vos données restent sur votre téléphone</AppText>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Icon name="shield" size={20} color={t.colors.success} />
+              <AppText variant="headline" style={{ marginLeft: 10, flex: 1 }}>
+                Vos données restent sur votre téléphone
+              </AppText>
+            </View>
             <AppText variant="body" tone="secondary" style={{ marginTop: 8 }}>
               Garée n'a besoin d'aucun compte et ne dispose d'aucun serveur pour stocker vos
               informations personnelles.

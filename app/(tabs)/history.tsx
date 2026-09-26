@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import {
   ScreenContainer,
   GlassCard,
   AppText,
+  Icon,
   AccuracyBadge,
   EmptyState,
   GlassButton,
@@ -79,7 +79,7 @@ export default function HistoryScreen() {
           onPress: () =>
             addFavorite({
               name: selected.label ?? 'Lieu enregistré',
-              icon: '📍',
+              icon: 'place',
               latitude: selected.latitude,
               longitude: selected.longitude,
               address: selected.address ?? null,
@@ -97,14 +97,14 @@ export default function HistoryScreen() {
       headerRight={
         history.length > 0 ? (
           <Pressable onPress={confirmClearAll} accessibilityLabel="Tout supprimer" hitSlop={10}>
-            <Ionicons name="trash-outline" size={22} color={t.colors.danger} />
+            <Icon name="trash" size={22} color={t.colors.danger} />
           </Pressable>
         ) : undefined
       }
     >
       {history.length === 0 ? (
         <EmptyState
-          icon="🅿️"
+          icon="history"
           title="Aucun historique"
           message="Les emplacements que vous enregistrez apparaîtront ici, du plus récent au plus ancien."
         />
@@ -125,7 +125,7 @@ export default function HistoryScreen() {
                 <GlassCard style={{ marginBottom: 12 }}>
                   <View style={styles.row}>
                     <View style={[styles.iconWrap, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
-                      <AppText variant="title">🚗</AppText>
+                      <Icon name="car" size={24} color={t.colors.car} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 14 }}>
                       <View style={styles.titleRow}>
@@ -147,7 +147,7 @@ export default function HistoryScreen() {
                         Précision : {formatAccuracy(item.accuracy)}
                       </AppText>
                     </View>
-                    <Ionicons name="ellipsis-horizontal" size={20} color={t.colors.textMuted} />
+                    <Icon name="more" size={20} color={t.colors.textMuted} />
                   </View>
                 </GlassCard>
               </Pressable>
@@ -157,7 +157,7 @@ export default function HistoryScreen() {
             history.length > 1 ? (
               <GlassButton
                 label="Supprimer toutes les positions"
-                icon="🗑️"
+                icon="trash"
                 onPress={confirmClearAll}
                 style={{ marginTop: 8 }}
                 tint={t.colors.danger}

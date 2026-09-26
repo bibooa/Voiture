@@ -9,12 +9,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useTheme } from '@/theme';
 import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 import { haptics } from '@/services/haptics';
 
 type Props = {
   label: string;
   onPress: () => void;
-  icon?: string;
+  icon?: IconName;
   disabled?: boolean;
   loading?: boolean;
   /** 'car' uses the green car gradient, 'primary' the blue brand gradient. */
@@ -85,7 +86,9 @@ export function PrimaryButton({
           <ActivityIndicator color={t.colors.onPrimary} />
         ) : (
           <View style={styles.row}>
-            {icon ? <AppText variant="callout" color={t.colors.onPrimary}>{icon}  </AppText> : null}
+            {icon ? (
+              <Icon name={icon} size={20} color={t.colors.onPrimary} style={{ marginRight: 10 }} />
+            ) : null}
             <AppText variant="callout" weight="bold" color={t.colors.onPrimary}>
               {label}
             </AppText>

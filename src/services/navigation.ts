@@ -1,4 +1,4 @@
-import { Linking, Platform } from 'react-native';
+import { Linking, Platform, Share } from 'react-native';
 
 /**
  * Launch turn-by-turn navigation to the car using the phone's native maps app
@@ -26,5 +26,27 @@ export async function openWalkingDirections(
     await Linking.openURL(supported ? url : webFallback);
   } catch {
     await Linking.openURL(webFallback).catch(() => {});
+  }
+}
+
+/**
+ * Share the car's location as a maps link (e.g. to send to someone, or to open
+ * it on another device). Uses the OS share sheet.
+ */
+export async function shareLocation(
+  latitude: number,
+  longitude: number,
+  label = 'Ma voiture',
+  note?: string | null
+): Promise<void> {
+  const coords = `${latitude.toFixed(6)},${longitude.toFixed(6)}`;
+  const link = `https://www.google.com/maps/search/?api=1&query=${coords}`;
+  const message = [`${label} est ici : ${link}`, note ? `Repère : ${note}` : null]
+    .filter(Boolean)
+    .join('\n');
+  try {
+    await Share.share({ message });
+  } catch {
+    /* user dismissed */
   }
 }

@@ -9,7 +9,9 @@ Garée est une application mobile **iOS & Android** (React Native + Expo) qui m�
 ## ✨ Fonctionnalités
 
 - **Enregistrement en un geste** — un gros bouton capture la position la plus fiable possible en fusionnant plusieurs mesures GPS.
-- **Retrouver ma voiture** — distance, direction (flèche + cardinal), temps de marche estimé, guidage vers l'app de cartes du téléphone.
+- **Repère de stationnement** — ajoutez un détail utile (niveau, zone, n° de place) affiché à l'enregistrement et au guidage.
+- **Retrouver ma voiture** — distance, direction (grande flèche + cardinal), temps de marche estimé, **état d'arrivée** (retour haptique quand vous y êtes), guidage vers l'app de cartes du téléphone, **partage** de la position.
+- **Iconographie vectorielle** — jeu d'icônes cohérent (SVG), aucun emoji dans l'interface.
 - **Carte interactive** — marqueurs personnalisés voiture/utilisateur, cercle de précision, ligne de trajet, recentrage, style sombre sur-mesure.
 - **Précision honnête** — indicateur 🟢/🟡/🔴 et valeur `±N m` réelle. L'app **ne surestime jamais** la précision fournie par le téléphone.
 - **Historique** — positions passées, renommables, supprimables, réutilisables pour la navigation.

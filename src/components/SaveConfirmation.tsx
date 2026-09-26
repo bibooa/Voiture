@@ -14,6 +14,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
 import { AppText } from './AppText';
+import { Icon } from './Icon';
 import { Pulse } from './Pulse';
 import { formatAccuracy } from '@/utils/geo';
 import { haptics } from '@/services/haptics';
@@ -75,16 +76,14 @@ export function SaveConfirmation({ visible, accuracy, address, onDone }: Props) 
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <AppText variant="hero" color="#fff">
-              ✓
-            </AppText>
+            <Icon name="checkmark" size={56} color="#fff" />
           </LinearGradient>
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeIn.delay(250)} style={styles.textBlock}>
         <AppText variant="title" center>
-          🚗 Voiture enregistrée
+          Voiture enregistrée
         </AppText>
         <AppText variant="callout" tone="secondary" center style={{ marginTop: 8 }}>
           Position enregistrée avec une précision de {formatAccuracy(accuracy)}

@@ -110,13 +110,13 @@ export default function SettingsScreen() {
         {/* Localisation */}
         <Group title="Localisation" delay={0}>
           <SettingsRow
-            icon="🎯"
+            icon="accuracy"
             label="Haute précision"
             description="Utilise le GPS/GNSS au maximum pour une position plus fiable."
             right={<Toggle value={s.highAccuracy} onValueChange={(v) => s.set('highAccuracy', v)} />}
           />
           <SettingsRow
-            icon="🔐"
+            icon="lock"
             label="Autorisation de localisation"
             description={
               permission === 'granted'
@@ -133,7 +133,7 @@ export default function SettingsScreen() {
         {/* Carte */}
         <Group title="Carte" delay={60}>
           <SettingsRow
-            icon="🗺️"
+            icon="map"
             label="Type de carte"
             right={
               <View style={{ width: 200 }}>
@@ -150,7 +150,7 @@ export default function SettingsScreen() {
             }
           />
           <SettingsRow
-            icon="🧭"
+            icon="compass"
             label="Rotation automatique"
             description="Oriente la carte selon la direction du téléphone."
             right={<Toggle value={s.autoRotateMap} onValueChange={(v) => s.set('autoRotateMap', v)} />}
@@ -161,7 +161,7 @@ export default function SettingsScreen() {
         {/* Notifications */}
         <Group title="Notifications" delay={120}>
           <SettingsRow
-            icon="🔔"
+            icon="bell"
             label="Rappels de stationnement"
             description="Recevez un rappel après avoir enregistré votre voiture."
             right={<Toggle value={s.parkingReminders} onValueChange={onToggleReminders} />}
@@ -172,7 +172,7 @@ export default function SettingsScreen() {
         {/* Apparence */}
         <Group title="Apparence" delay={180}>
           <SettingsRow
-            icon="🌗"
+            icon="theme"
             label="Thème"
             right={
               <View style={{ width: 210 }}>
@@ -189,19 +189,19 @@ export default function SettingsScreen() {
             }
           />
           <SettingsRow
-            icon="🫧"
+            icon="glass"
             label="Effets Glass"
             description="Flou et transparence des cartes."
             right={<Toggle value={s.glassEffects} onValueChange={(v) => s.set('glassEffects', v)} />}
           />
           <SettingsRow
-            icon="✨"
+            icon="sparkles"
             label="Animations"
             description="Micro-interactions et transitions animées."
             right={<Toggle value={s.animations} onValueChange={(v) => s.set('animations', v)} />}
           />
           <SettingsRow
-            icon="📳"
+            icon="haptic"
             label="Retour haptique"
             description="Vibrations subtiles au toucher."
             right={<Toggle value={s.haptics} onValueChange={(v) => s.set('haptics', v)} />}
@@ -211,25 +211,25 @@ export default function SettingsScreen() {
 
         {/* Données */}
         <Group title="Données" delay={240}>
-          <SettingsRow icon="📚" label="Historique" description={`${history.length} position${history.length > 1 ? 's' : ''} · ${favorites.length} favori${favorites.length > 1 ? 's' : ''}`} />
-          <SettingsRow icon="📤" label="Exporter les données" description="Partager un fichier JSON de vos données." onPress={exportData} />
-          <SettingsRow icon="🗑️" label="Supprimer les positions" onPress={deletePositions} danger last />
+          <SettingsRow icon="history" label="Historique" description={`${history.length} position${history.length > 1 ? 's' : ''} · ${favorites.length} favori${favorites.length > 1 ? 's' : ''}`} />
+          <SettingsRow icon="export" label="Exporter les données" description="Partager un fichier JSON de vos données." onPress={exportData} />
+          <SettingsRow icon="trash" label="Supprimer les positions" onPress={deletePositions} danger last />
         </Group>
 
         {/* Confidentialité */}
         <Group title="Confidentialité" delay={300}>
           <SettingsRow
-            icon="🔒"
+            icon="shield"
             label="Politique de confidentialité"
             description="Comment vos données de localisation sont traitées."
             onPress={() => router.push('/privacy')}
           />
           <SettingsRow
-            icon="📱"
+            icon="device"
             label="Stockage local uniquement"
             description="Vos positions ne quittent jamais votre appareil."
           />
-          <SettingsRow icon="⚠️" label="Supprimer toutes les données" onPress={deleteEverything} danger last />
+          <SettingsRow icon="warning" label="Supprimer toutes les données" onPress={deleteEverything} danger last />
         </Group>
 
         <AppText variant="caption" tone="muted" center style={{ marginTop: 8 }}>

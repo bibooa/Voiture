@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, FlatList, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeIn, FadeInUp, LinearTransition } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 
@@ -8,6 +7,8 @@ import {
   ScreenContainer,
   GlassCard,
   AppText,
+  Icon,
+  safeIconName,
   EmptyState,
   PrimaryButton,
   GlassButton,
@@ -34,7 +35,7 @@ export default function FavoritesScreen() {
   const [editing, setEditing] = useState<Favorite | null>(null);
   const [selected, setSelected] = useState<Favorite | null>(null);
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('📍');
+  const [icon, setIcon] = useState('place');
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
@@ -47,7 +48,7 @@ export default function FavoritesScreen() {
     }
     setEditing(null);
     setName('');
-    setIcon('📍');
+    setIcon('place');
     setEditorOpen(true);
   };
 
@@ -100,17 +101,17 @@ export default function FavoritesScreen() {
       headerRight={
         <Pressable onPress={openCreate} accessibilityLabel="Ajouter un favori" hitSlop={10}>
           <View style={[styles.addBtn, { backgroundColor: t.colors.primary }]}>
-            <Ionicons name="add" size={24} color="#fff" />
+            <Icon name="add" size={24} color="#fff" />
           </View>
         </Pressable>
       }
     >
       {favorites.length === 0 ? (
         <EmptyState
-          icon="⭐"
+          icon="favorite"
           title="Aucun favori"
           message="Enregistrez vos lieux habituels — maison, travail, supermarché — pour les retrouver en un geste."
-          action={<PrimaryButton label="Ajouter un favori" icon="＋" onPress={openCreate} />}
+          action={<PrimaryButton label="Ajouter un favori" icon="add" onPress={openCreate} />}
         />
       ) : (
         <FlatList
@@ -129,7 +130,7 @@ export default function FavoritesScreen() {
                 <GlassCard style={{ marginBottom: 12 }}>
                   <View style={styles.row}>
                     <View style={[styles.iconWrap, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
-                      <AppText variant="title">{item.icon}</AppText>
+                      <Icon name={safeIconName(item.icon)} size={24} color={t.colors.primary} />
                     </View>
                     <View style={{ flex: 1, marginLeft: 14 }}>
                       <AppText variant="callout" weight="bold" numberOfLines={1}>
@@ -141,7 +142,7 @@ export default function FavoritesScreen() {
                         </AppText>
                       ) : null}
                     </View>
-                    <Ionicons name="ellipsis-horizontal" size={20} color={t.colors.textMuted} />
+                    <Icon name="more" size={20} color={t.colors.textMuted} />
                   </View>
                 </GlassCard>
               </Pressable>
@@ -199,7 +200,7 @@ export default function FavoritesScreen() {
                         },
                       ]}
                     >
-                      <AppText variant="headline">{p.icon}</AppText>
+                      <Icon name={safeIconName(p.icon)} size={22} color={active ? t.colors.primary : t.colors.textSecondary} />
                     </Pressable>
                   );
                 })}

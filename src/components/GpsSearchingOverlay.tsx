@@ -4,6 +4,7 @@ import { BlurView } from 'expo-blur';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useTheme } from '@/theme';
 import { AppText } from './AppText';
+import { Icon } from './Icon';
 import { Pulse } from './Pulse';
 import { AccuracyBadge } from './AccuracyBadge';
 import { GlassButton } from './GlassButton';
@@ -37,9 +38,7 @@ export function GpsSearchingOverlay({ visible, bestAccuracy, sampleCount, onCanc
         <View style={styles.radar}>
           <Pulse color={t.colors.primary} size={200} rings={3} />
           <View style={[styles.core, { backgroundColor: t.colors.primary, shadowColor: t.colors.primary }]}>
-            <AppText variant="title" color="#fff">
-              📡
-            </AppText>
+            <Icon name="locate" size={38} color="#fff" />
           </View>
         </View>
 

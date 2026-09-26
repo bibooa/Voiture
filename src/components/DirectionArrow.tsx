@@ -2,8 +2,8 @@ import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { AppText } from './AppText';
 
 type Props = {
   /**
@@ -62,9 +62,7 @@ export function DirectionArrow({ rotation, size = 200 }: Props) {
           end={{ x: 1, y: 1 }}
           style={[styles.arrow, { shadowColor: t.colors.primary }]}
         >
-          <AppText variant="hero" color="#fff">
-            ↑
-          </AppText>
+          <Ionicons name="arrow-up" size={52} color="#fff" />
         </LinearGradient>
       </Animated.View>
     </View>

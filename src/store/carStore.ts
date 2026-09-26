@@ -16,6 +16,8 @@ type CarState = {
   /** Save a new parked location from a GPS fix. Returns the record. */
   saveCar: (fix: Coordinate, address?: string | null) => ParkedLocation;
   rename: (id: string, label: string) => void;
+  /** Set an optional detail note (parking floor, zone, spot number…). */
+  setNote: (id: string, note: string) => void;
   remove: (id: string) => void;
   clearHistory: () => void;
   /** Make an existing history entry the active car again. */
@@ -63,6 +65,14 @@ export const useCarStore = create<CarState>((set, get) => ({
     );
     const current =
       get().current?.id === id ? { ...get().current!, label } : get().current;
+    set({ history, current });
+    persist({ current, history });
+  },
+
+  setNote: (id, note) => {
+    const history = get().history.map((h) => (h.id === id ? { ...h, note } : h));
+    const current =
+      get().current?.id === id ? { ...get().current!, note } : get().current;
     set({ history, current });
     persist({ current, history });
   },

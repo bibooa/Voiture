@@ -2,10 +2,11 @@ import React from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme';
 import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 import { haptics } from '@/services/haptics';
 
 type Props = {
-  icon?: string;
+  icon?: IconName;
   label: string;
   description?: string;
   right?: React.ReactNode;
@@ -30,8 +31,8 @@ export function SettingsRow({ icon, label, description, right, onPress, danger, 
       ]}
     >
       {icon ? (
-        <View style={styles.iconWrap}>
-          <AppText variant="callout">{icon}</AppText>
+        <View style={[styles.iconWrap, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
+          <Icon name={icon} size={18} color={danger ? t.colors.danger : t.colors.primary} />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>
@@ -65,6 +66,14 @@ export function SettingsRow({ icon, label, description, right, onPress, danger, 
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
-  iconWrap: { width: 34, alignItems: 'center', marginRight: 8 },
+  iconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
   right: { marginLeft: 12 },
 });

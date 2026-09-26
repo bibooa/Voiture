@@ -3,16 +3,21 @@ import type { Favorite } from '@/types';
 import { StorageKeys, readJSON, writeJSON } from '@/services/storage';
 import { makeId } from '@/utils/id';
 
-/** Suggested favourite presets shown when creating a new favourite. */
+/**
+ * Suggested favourite presets. `icon` is a semantic Icon key (see components/Icon),
+ * not an emoji, so favourites render as clean vector glyphs everywhere.
+ */
 export const FAVORITE_PRESETS = [
-  { icon: '🏠', name: 'Maison' },
-  { icon: '💼', name: 'Travail' },
-  { icon: '🛒', name: 'Supermarché' },
-  { icon: '🏟️', name: 'Stade' },
-  { icon: '✈️', name: 'Aéroport' },
-  { icon: '🏥', name: 'Hôpital' },
-  { icon: '🎓', name: 'École' },
-  { icon: '📍', name: 'Lieu' },
+  { icon: 'home', name: 'Maison' },
+  { icon: 'work', name: 'Travail' },
+  { icon: 'cart', name: 'Supermarché' },
+  { icon: 'stadium', name: 'Stade' },
+  { icon: 'airport', name: 'Aéroport' },
+  { icon: 'hospital', name: 'Hôpital' },
+  { icon: 'school', name: 'École' },
+  { icon: 'gym', name: 'Sport' },
+  { icon: 'restaurant', name: 'Restaurant' },
+  { icon: 'place', name: 'Lieu' },
 ] as const;
 
 type FavoritesState = {

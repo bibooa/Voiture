@@ -3,25 +3,25 @@ import { View, StyleSheet, useWindowDimensions, ScrollView, NativeSyntheticEvent
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
-import { AmbientBackground, AppText, GlassCard, PrimaryButton, GlassButton, Pulse } from '@/components';
+import { AmbientBackground, AppText, Icon, GlassCard, PrimaryButton, GlassButton, Pulse, type IconName } from '@/components';
 import { useTheme } from '@/theme';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useLocationStore } from '@/store/locationStore';
 import { haptics } from '@/services/haptics';
 
-const SLIDES = [
+const SLIDES: { icon: IconName; title: string; body: string }[] = [
   {
-    icon: '🚗',
+    icon: 'car',
     title: 'Ne perdez plus jamais votre voiture.',
     body: 'Garée mémorise l\'endroit exact où vous vous garez, en un seul geste.',
   },
   {
-    icon: '📍',
+    icon: 'pin',
     title: 'Enregistrez votre position en un clic.',
     body: 'Un appui, une position GPS stabilisée et fiable, enregistrée sur votre téléphone.',
   },
   {
-    icon: '🧭',
+    icon: 'compass',
     title: 'Retrouvez-la facilement grâce à votre GPS.',
     body: 'Distance, direction et guidage vous ramènent à votre voiture sans effort.',
   },
@@ -90,7 +90,7 @@ export default function Onboarding() {
                   entering={FadeIn.duration(500)}
                   style={[styles.iconBubble, { borderColor: t.colors.glassBorder, backgroundColor: t.colors.glassStrong }]}
                 >
-                  <AppText style={{ fontSize: 76 }}>{s.icon}</AppText>
+                  <Icon name={s.icon} size={68} color={t.colors.primary} />
                 </Animated.View>
               </View>
               <Animated.View entering={FadeInUp.delay(120).duration(500)} style={styles.copy}>
@@ -124,16 +124,19 @@ export default function Onboarding() {
           {isLast ? (
             <Animated.View entering={FadeInUp.duration(400)}>
               <GlassCard padded style={{ marginBottom: t.spacing.lg }}>
-                <AppText variant="callout" weight="semibold">
-                  🔒 Confidentialité d'abord
-                </AppText>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Icon name="shield" size={18} color={t.colors.success} />
+                  <AppText variant="callout" weight="semibold" style={{ marginLeft: 8 }}>
+                    Confidentialité d'abord
+                  </AppText>
+                </View>
                 <AppText variant="body" tone="secondary" style={{ marginTop: 6 }}>
                   Votre position n'est utilisée qu'au moment où vous enregistrez ou retrouvez votre
                   voiture, et reste stockée uniquement sur votre téléphone. Rien n'est envoyé sur un
                   serveur.
                 </AppText>
               </GlassCard>
-              <PrimaryButton label="Autoriser la localisation" icon="📍" onPress={finish} />
+              <PrimaryButton label="Autoriser la localisation" icon="pin" onPress={finish} />
             </Animated.View>
           ) : (
             <PrimaryButton label="Continuer" onPress={goNext} />

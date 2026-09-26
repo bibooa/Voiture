@@ -4,11 +4,12 @@ import { BlurView } from 'expo-blur';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { useTheme } from '@/theme';
 import { AppText } from './AppText';
+import { Icon, type IconName } from './Icon';
 import { haptics } from '@/services/haptics';
 
 type Props = {
   label?: string;
-  icon?: string;
+  icon?: IconName;
   onPress: () => void;
   compact?: boolean;
   style?: ViewStyle;
@@ -55,10 +56,12 @@ export function GlassButton({ label, icon, onPress, compact, style, tint, access
       <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.glass }]} />
       <View style={styles.row}>
         {icon ? (
-          <AppText variant="callout" color={tint ?? t.colors.text}>
-            {icon}
-            {label ? '  ' : ''}
-          </AppText>
+          <Icon
+            name={icon}
+            size={18}
+            color={tint ?? t.colors.text}
+            style={{ marginRight: label ? 8 : 0 }}
+          />
         ) : null}
         {label ? (
           <AppText variant="callout" weight="semibold" color={tint ?? t.colors.text}>

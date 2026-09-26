@@ -1,4 +1,5 @@
 export { AppText } from './AppText';
+export { Icon, safeIconName, type IconName } from './Icon';
 export { AmbientBackground } from './AmbientBackground';
 export { GlassCard } from './GlassCard';
 export { PrimaryButton } from './PrimaryButton';

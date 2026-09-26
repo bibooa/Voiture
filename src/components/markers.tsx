@@ -2,29 +2,29 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
-import { AppText } from './AppText';
+import { Icon, safeIconName, type IconName } from './Icon';
 
 /**
  * Custom map markers rendered as children of react-native-maps <Marker>.
  *
- * These are intentionally static (no per-frame animation) so the map can flag
- * `tracksViewChanges={false}` after first paint — the standard technique for
- * keeping custom markers smooth on Android. The premium feel comes from the
- * gradient body, glowing halo and crisp shadow rather than motion here.
+ * Static (no per-frame animation) so the map can flag `tracksViewChanges={false}`
+ * after first paint — the standard technique for smooth custom markers on
+ * Android. The premium feel comes from the gradient body, glowing halo and crisp
+ * shadow, with a clean vector glyph instead of an emoji.
  */
 
 export function CarMarker() {
   const t = useTheme();
   return (
     <View style={styles.container}>
-      <View style={[styles.halo, { backgroundColor: t.colors.car + '33' }]} />
+      <View style={[styles.halo, { backgroundColor: t.colors.car + '30' }]} />
       <LinearGradient
         colors={t.colors.carGradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.pin, { shadowColor: t.colors.car, borderColor: '#FFFFFFAA' }]}
+        style={[styles.pin, { shadowColor: t.colors.car, borderColor: '#FFFFFFCC' }]}
       >
-        <AppText variant="headline">🚗</AppText>
+        <Icon name="car" size={24} color="#FFFFFF" />
       </LinearGradient>
       <View style={[styles.stem, { backgroundColor: t.colors.car }]} />
     </View>
@@ -56,7 +56,7 @@ export function FavoriteMarker({ icon }: { icon: string }) {
           { backgroundColor: t.colors.glassStrong, borderColor: t.colors.glassBorder },
         ]}
       >
-        <AppText variant="callout">{icon}</AppText>
+        <Icon name={safeIconName(icon) as IconName} size={20} color={t.colors.primary} />
       </View>
     </View>
   );
@@ -66,9 +66,9 @@ const styles = StyleSheet.create({
   container: { alignItems: 'center', justifyContent: 'center', width: 72, height: 80 },
   halo: { position: 'absolute', top: 6, width: 64, height: 64, borderRadius: 32 },
   pin: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
