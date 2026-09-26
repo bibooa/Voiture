@@ -58,7 +58,7 @@ src/
 
 | Domaine | Choix |
 |---|---|
-| Framework | Expo SDK 52, React Native 0.76, TypeScript strict |
+| Framework | Expo SDK 54, React Native 0.81, TypeScript strict |
 | Navigation | expo-router (typed routes) |
 | Carte | react-native-maps |
 | Localisation | expo-location (multi-échantillons + fusion) |

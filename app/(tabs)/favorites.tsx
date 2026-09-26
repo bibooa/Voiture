@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, FlatList, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, FadeIn, FadeInUp, Layout } from 'react-native-reanimated';
+import Animated, { FadeInDown, FadeIn, FadeInUp, LinearTransition } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
 
 import {
@@ -119,7 +119,7 @@ export default function FavoritesScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 130, paddingTop: 4 }}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 40).duration(360)} layout={Layout}>
+            <Animated.View entering={FadeInDown.delay(index * 40).duration(360)} layout={LinearTransition}>
               <Pressable
                 onPress={() => {
                   haptics.light();

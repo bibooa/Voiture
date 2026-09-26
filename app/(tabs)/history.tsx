@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Alert, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
+import Animated, { FadeInDown, LinearTransition } from 'react-native-reanimated';
 
 import {
   ScreenContainer,
@@ -115,7 +115,7 @@ export default function HistoryScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 130, paddingTop: 4 }}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 40).duration(360)} layout={Layout}>
+            <Animated.View entering={FadeInDown.delay(index * 40).duration(360)} layout={LinearTransition}>
               <Pressable
                 onPress={() => {
                   haptics.light();
