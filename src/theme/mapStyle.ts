@@ -1,25 +1,31 @@
 /**
- * Google Maps JSON style for the dark theme. Tuned to match VéhiTrack's deep-blue
- * palette so the map blends into the app instead of glaring white at night.
- * Applied only on Android/Google provider standard maps in dark mode.
+ * Google Maps style for the dark theme (Android). Tuned for LEGIBILITY first:
+ * clearly visible road hierarchy and readable street names, on a navy base that
+ * matches the app. iOS uses Apple Maps' native dark mode instead.
  */
 export const mapDarkStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#0b1024' }] },
-  { elementType: 'labels.icon', stylers: [{ visibility: 'off' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8a93b5' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#0b1024' }] },
-  { featureType: 'administrative', elementType: 'geometry', stylers: [{ color: '#2a3357' }] },
-  { featureType: 'administrative.country', elementType: 'labels.text.fill', stylers: [{ color: '#9aa4c8' }] },
+  { elementType: 'geometry', stylers: [{ color: '#111829' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#b7c0dc' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#0c1120' }] },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#2c3654' }] },
   { featureType: 'administrative.land_parcel', stylers: [{ visibility: 'off' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6b74a0' }] },
-  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#122a1f' }] },
-  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#3f7a5a' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#182036' }] },
-  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#0e1428' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#8791b5' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#26325a' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#12183a' }] },
-  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1a2140' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#050912' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#3a4468' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry', stylers: [{ color: '#151d31' }] },
+  { featureType: 'landscape.man_made', elementType: 'geometry.stroke', stylers: [{ color: '#222b44' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#162036' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#8791b3' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#14281f' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#6f9a82' }] },
+  { featureType: 'road', elementType: 'geometry.fill', stylers: [{ color: '#2a3452' }] },
+  { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#1a2138' }] },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#c3cae2' }] },
+  { featureType: 'road.local', elementType: 'geometry.fill', stylers: [{ color: '#242d48' }] },
+  { featureType: 'road.arterial', elementType: 'geometry.fill', stylers: [{ color: '#303b5e' }] },
+  { featureType: 'road.highway', elementType: 'geometry.fill', stylers: [{ color: '#3a4672' }] },
+  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#1d2440' }] },
+  { featureType: 'road.highway', elementType: 'labels.text.fill', stylers: [{ color: '#dfe4f5' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#1c2540' }] },
+  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#9aa4c6' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0a1428' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4f6390' }] },
 ];

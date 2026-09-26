@@ -47,8 +47,8 @@ export function PrimaryButton({
 
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: t.animations ? withSpring(1 - pressed.value * 0.04, t.spring.snappy) : 1 }],
-    shadowOpacity: withTiming(0.35 + pressed.value * 0.35),
-    shadowRadius: withTiming(18 + pressed.value * 14),
+    shadowOpacity: withTiming(0.22 + pressed.value * 0.12),
+    shadowRadius: withTiming(10 + pressed.value * 4),
   }));
 
   const isDisabled = disabled || loading;
@@ -101,11 +101,11 @@ export function PrimaryButton({
 
 const styles = StyleSheet.create({
   wrap: {
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 4,
   },
   gradient: {
-    height: 60,
+    height: 54,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,

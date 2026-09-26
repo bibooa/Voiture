@@ -18,6 +18,8 @@ import {
 import { useTheme } from '@/theme';
 import { useFavoritesStore, FAVORITE_PRESETS } from '@/store/favoritesStore';
 import { useLocationStore } from '@/store/locationStore';
+import { useLocationProfile } from '@/hooks/useLocationProfile';
+import { formatAccuracy } from '@/location/quality';
 import { reverseGeocode } from '@/services/location';
 import { openWalkingDirections } from '@/services/navigation';
 import type { Favorite } from '@/types';
@@ -29,6 +31,8 @@ export default function FavoritesScreen() {
   const add = useFavoritesStore((s) => s.add);
   const update = useFavoritesStore((s) => s.update);
   const remove = useFavoritesStore((s) => s.remove);
+  // GPS on while this screen is visible (a favourite is created from it).
+  useLocationProfile('map');
   const fix = useLocationStore((s) => s.fix);
 
   const [editorOpen, setEditorOpen] = useState(false);
@@ -39,10 +43,10 @@ export default function FavoritesScreen() {
   const [saving, setSaving] = useState(false);
 
   const openCreate = () => {
-    if (!fix) {
+    if (!fix || Date.now() - fix.timestamp > 30000) {
       Alert.alert(
-        'Position indisponible',
-        'Nous avons besoin de votre position actuelle pour créer un favori. Ouvrez la carte pour activer la localisation.'
+        'Position en cours d’acquisition',
+        'Nous attendons une position GPS récente pour créer ce favori. Réessayez dans quelques secondes, idéalement à l’extérieur.'
       );
       return;
     }
@@ -170,7 +174,7 @@ export default function FavoritesScreen() {
             <GlassCard strong>
               <AppText variant="headline">{editing ? 'Modifier le favori' : 'Nouveau favori'}</AppText>
               <AppText variant="caption" tone="secondary" style={{ marginTop: 4 }}>
-                {editing ? 'Renommez ce lieu.' : 'Enregistré à votre position actuelle.'}
+                {editing ? 'Renommez ce lieu.' : `Enregistré à votre position actuelle (${formatAccuracy(fix?.accuracy)}).`}
               </AppText>
 
               <TextInput

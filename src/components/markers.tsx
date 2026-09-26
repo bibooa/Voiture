@@ -1,32 +1,29 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
-import { Icon, safeIconName, type IconName } from './Icon';
+import { AppText } from './AppText';
+import { Icon, safeIconName } from './Icon';
 
 /**
- * Custom map markers rendered as children of react-native-maps <Marker>.
- *
- * Static (no per-frame animation) so the map can flag `tracksViewChanges={false}`
- * after first paint — the standard technique for smooth custom markers on
- * Android. The premium feel comes from the gradient body, glowing halo and crisp
- * shadow, with a clean vector glyph instead of an emoji.
+ * Map markers (children of react-native-maps <Marker>). Kept static and small:
+ * a real navigation app needs crisp, readable markers — not glowing props.
  */
 
-export function CarMarker() {
+export function CarMarker({ label }: { label?: string }) {
   const t = useTheme();
   return (
-    <View style={styles.container}>
-      <View style={[styles.halo, { backgroundColor: t.colors.car + '30' }]} />
-      <LinearGradient
-        colors={t.colors.carGradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.pin, { shadowColor: t.colors.car, borderColor: '#FFFFFFCC' }]}
-      >
-        <Icon name="car" size={24} color="#FFFFFF" />
-      </LinearGradient>
-      <View style={[styles.stem, { backgroundColor: t.colors.car }]} />
+    <View style={styles.carWrap}>
+      {label ? (
+        <View style={[styles.label, { backgroundColor: t.colors.backgroundElevated, borderColor: t.colors.glassBorder }]}>
+          <AppText variant="caption" weight="bold" style={{ fontSize: 12 }}>
+            {label}
+          </AppText>
+        </View>
+      ) : null}
+      <View style={[styles.pin, { backgroundColor: t.colors.car, borderColor: '#FFFFFF' }]}>
+        <Icon name="car" size={20} color="#FFFFFF" />
+      </View>
+      <View style={[styles.tip, { borderTopColor: '#FFFFFF' }]} />
     </View>
   );
 }
@@ -34,14 +31,19 @@ export function CarMarker() {
 export function UserMarker() {
   const t = useTheme();
   return (
-    <View style={styles.dotContainer}>
-      <View style={[styles.dotHalo, { backgroundColor: t.colors.primary + '2E' }]} />
-      <View
-        style={[
-          styles.dot,
-          { backgroundColor: t.colors.primary, borderColor: '#FFFFFF', shadowColor: t.colors.primary },
-        ]}
-      />
+    <View style={styles.userWrap}>
+      <View style={[styles.userHalo, { backgroundColor: t.colors.primary + '30' }]} />
+      <View style={[styles.userDot, { backgroundColor: t.colors.primary }]} />
+    </View>
+  );
+}
+
+/** A view cone pointing up; the map rotates it with the compass heading. */
+export function HeadingCone() {
+  const t = useTheme();
+  return (
+    <View style={styles.coneWrap}>
+      <View style={[styles.cone, { borderTopColor: t.colors.primary + '55' }]} />
     </View>
   );
 }
@@ -49,57 +51,74 @@ export function UserMarker() {
 export function FavoriteMarker({ icon }: { icon: string }) {
   const t = useTheme();
   return (
-    <View style={styles.container}>
-      <View
-        style={[
-          styles.favPin,
-          { backgroundColor: t.colors.glassStrong, borderColor: t.colors.glassBorder },
-        ]}
-      >
-        <Icon name={safeIconName(icon) as IconName} size={20} color={t.colors.primary} />
-      </View>
+    <View style={[styles.fav, { backgroundColor: t.colors.backgroundElevated, borderColor: t.colors.glassBorder }]}>
+      <Icon name={safeIconName(icon)} size={16} color={t.colors.primary} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', justifyContent: 'center', width: 72, height: 80 },
-  halo: { position: 'absolute', top: 6, width: 64, height: 64, borderRadius: 32 },
+  carWrap: { alignItems: 'center' },
+  label: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 4,
+  },
   pin: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 2.5,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    shadowOpacity: 0.6,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
   },
-  stem: {
-    width: 4,
-    height: 10,
-    borderRadius: 2,
-    marginTop: -2,
-    opacity: 0.9,
+  tip: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -1,
   },
-  dotContainer: { alignItems: 'center', justifyContent: 'center', width: 44, height: 44 },
-  dotHalo: { position: 'absolute', width: 40, height: 40, borderRadius: 20 },
-  dot: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+  userWrap: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  userHalo: { position: 'absolute', width: 34, height: 34, borderRadius: 17 },
+  userDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 3,
-    shadowOpacity: 0.8,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    borderColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
   },
-  favPin: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  // 90×90 square with the cone tip at the exact centre so it rotates about
+  // the user's position on both iOS and Android.
+  coneWrap: { width: 90, height: 90, alignItems: 'center' },
+  cone: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 26,
+    borderRightWidth: 26,
+    borderTopWidth: 45,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+  },
+  fav: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: StyleSheet.hairlineWidth * 2,

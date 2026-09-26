@@ -33,7 +33,7 @@ export function GlassCard({
   ...rest
 }: Props) {
   const t = useTheme();
-  const r = radius ?? t.radius.xl;
+  const r = radius ?? t.radius.lg;
 
   const containerStyle: ViewStyle = {
     borderRadius: r,
@@ -41,13 +41,13 @@ export function GlassCard({
     borderColor: t.colors.glassBorder,
     overflow: 'hidden',
     shadowColor: t.colors.shadow,
-    shadowOpacity: t.colors.isDark ? 0.5 : 0.14,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 10,
+    shadowOpacity: t.colors.isDark ? 0.35 : 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
   };
 
-  const inner: ViewStyle = { padding: padded ? t.spacing.xl : 0 };
+  const inner: ViewStyle = { padding: padded ? t.spacing.lg : 0 };
 
   // A frosted, legible surface: blur + an opaque-ish scrim so text stays
   // readable over any background (dark map OR bright satellite), topped with a
@@ -66,12 +66,12 @@ export function GlassCard({
       ) : null}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: scrim }]} />
       <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
-      {/* Top light reflection */}
+      {/* Very subtle top edge highlight */}
       <LinearGradient
         colors={[t.colors.glassHighlight, 'transparent']}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 0.5, y: 0.55 }}
-        style={[StyleSheet.absoluteFill, { opacity: 0.5 }]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 0.25 }}
+        style={[StyleSheet.absoluteFill, { opacity: 0.18 }]}
         pointerEvents="none"
       />
       <View style={inner}>{children}</View>

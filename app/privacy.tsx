@@ -16,7 +16,11 @@ const SECTIONS = [
   },
   {
     title: 'Aucune collecte de données',
-    body: "Aucune donnée de localisation n'est envoyée à VéhiTrack ni à un tiers. Il n'y a ni analytics de localisation, ni publicité, ni revente de données.",
+    body: "Aucune donnée de localisation n'est envoyée à VéhiTrack. Il n'y a ni compte, ni analytics de localisation, ni publicité, ni revente de données.",
+  },
+  {
+    title: 'Itinéraires piétons (optionnel)',
+    body: "Si l'option « Itinéraires piétons en ligne » est activée, seuls le point de départ et le point d'arrivée d'un trajet sont envoyés au service de calcul d'itinéraire OpenStreetMap (routing.openstreetmap.de), uniquement lorsque vous consultez la position de votre voiture. Désactivez l'option dans les Réglages pour que rien ne quitte votre téléphone : la distance à vol d'oiseau est alors affichée.",
   },
   {
     title: 'Adresses approximatives',

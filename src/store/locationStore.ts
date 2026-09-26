@@ -1,93 +1,180 @@
+import { AppState, type AppStateStatus } from 'react-native';
 import { create } from 'zustand';
-import type { Coordinate } from '@/types';
+import type { LiveFix } from '@/types';
 import * as Loc from '@/services/location';
+import { smoothHeading } from '@/location/heading';
+import { useSettingsStore } from '@/store/settingsStore';
 
 /**
- * Shared live-location state. A single watch subscription feeds every screen,
- * so we don't spin up multiple GPS listeners (battery-friendly). Screens call
- * `startWatching` on focus and `stopWatching` on blur via a ref-count.
+ * Live location — the SINGLE source of truth for "where is the user".
+ *
+ * Every screen reads the same `fix` / `heading`, so distance, accuracy and
+ * direction are always computed from identical data.
+ *
+ * Battery: screens *request* a profile while focused (`acquire('map')` or
+ * `acquire('guidance')`) and release it on blur. The store runs exactly one
+ * subscription matching the most demanding active request:
+ *   - guidance: best accuracy, 1 s updates + compass
+ *   - map:      high accuracy, ~4 s / 3 m updates, no compass
+ *   - none:     GPS off
+ * Everything is paused while the app is in the background.
  */
 
-export type LocationError =
-  | 'permission-denied'
-  | 'services-disabled'
-  | 'unavailable'
-  | null;
+export type LocationError = 'permission-denied' | 'services-disabled' | 'unavailable' | null;
+export type HeadingState = { value: number; accuracy: number | null; timestamp: number };
+type Profile = Loc.WatchProfile;
 
 type LocationState = {
   permission: Loc.PermissionResult;
   servicesEnabled: boolean;
-  fix: Coordinate | null;
-  heading: number | null;
+  fix: LiveFix | null;
+  heading: HeadingState | null;
   error: LocationError;
-  watchers: number;
+  /** Which subscription is currently running (null = GPS off). */
+  active: Profile | null;
 
   refreshStatus: () => Promise<void>;
   requestPermission: () => Promise<boolean>;
-  startWatching: (highAccuracy?: boolean) => Promise<void>;
-  stopWatching: () => void;
+  /** Request a profile; returns a release function. */
+  acquire: (profile: Profile) => () => void;
 };
 
+const counts: Record<Profile, number> = { map: 0, guidance: 0 };
 let posSub: Loc.LocationSubscription | null = null;
 let headSub: Loc.LocationSubscription | null = null;
+let appActive = AppState.currentState === 'active';
+let applying: Promise<void> = Promise.resolve();
+let lastHeadingEmit = 0;
 
-export const useLocationStore = create<LocationState>((set, get) => ({
-  permission: 'undetermined',
-  servicesEnabled: true,
-  fix: null,
-  heading: null,
-  error: null,
-  watchers: 0,
+function desiredProfile(): Profile | null {
+  if (!appActive) return null;
+  if (counts.guidance > 0) return 'guidance';
+  if (counts.map > 0) return 'map';
+  return null;
+}
 
-  refreshStatus: async () => {
-    const [permission, servicesEnabled] = await Promise.all([
-      Loc.getPermissionStatus(),
-      Loc.isLocationEnabled(),
-    ]);
-    let error: LocationError = null;
-    if (permission === 'denied') error = 'permission-denied';
-    else if (!servicesEnabled) error = 'services-disabled';
-    set({ permission, servicesEnabled, error });
-  },
+function stopAll() {
+  posSub?.remove();
+  headSub?.remove();
+  posSub = null;
+  headSub = null;
+}
 
-  requestPermission: async () => {
-    const permission = await Loc.requestPermission();
-    set({ permission });
+export const useLocationStore = create<LocationState>((set, get) => {
+  /** Reconcile the running subscription with the desired profile. Serialised. */
+  const apply = (force = false) => {
+    applying = applying.then(async () => {
+      try {
+        await reconcile(force);
+      } catch {
+        stopAll();
+        set({ error: 'unavailable', active: null });
+      }
+    });
+  };
+
+  const reconcile = async (force: boolean) => {
+    const want = desiredProfile();
+    const { active } = get();
+    if (!force && want === active) return;
+
+    stopAll();
+    set({ active: null });
+    if (!want) return;
+
     await get().refreshStatus();
-    return permission === 'granted';
-  },
+    if (get().permission !== 'granted' || !get().servicesEnabled) return;
 
-  startWatching: async (highAccuracy = true) => {
-    set({ watchers: get().watchers + 1 });
-    await get().refreshStatus();
+    const highAccuracy = useSettingsStore.getState().highAccuracy;
 
-    if (get().permission !== 'granted') return;
-    if (posSub) return; // already watching
+    // Instant paint from a *recent* cached fix only (≤ 15 s old), e.g. when
+    // coming back to the app after a while.
+    const current = get().fix;
+    if (!current || Date.now() - current.timestamp > 15000) {
+      const recent = await Loc.getRecentFix();
+      if (recent) set({ fix: recent });
+    }
 
     try {
-      // Seed with a quick fix so the map has something immediately.
-      const quick = await Loc.getQuickPosition(highAccuracy);
-      set({ fix: quick, error: null });
+      posSub = await Loc.watchPosition(want, highAccuracy, (fix) => {
+        const prev = get().fix;
+        // Ignore out-of-order deliveries.
+        if (prev && fix.timestamp < prev.timestamp) return;
+        set({ fix, error: null });
+      });
+      if (want === 'guidance') {
+        headSub = await Loc.watchHeading((value, accuracy) => {
+          const now = Date.now();
+          if (now - lastHeadingEmit < 80) return; // ~12 Hz is plenty
+          lastHeadingEmit = now;
+          const prev = get().heading;
+          set({
+            heading: {
+              value: smoothHeading(prev?.value ?? null, value, 0.3),
+              accuracy,
+              timestamp: now,
+            },
+          });
+        });
+      } else {
+        set({ heading: null });
+      }
+      set({ active: want });
     } catch {
-      /* watch will provide fixes shortly */
+      stopAll();
+      set({ error: 'unavailable', active: null });
     }
+  };
 
-    try {
-      posSub = await Loc.watchPosition((fix) => set({ fix, error: null }), highAccuracy);
-      headSub = await Loc.watchHeading((heading) => set({ heading }));
-    } catch {
-      set({ error: 'unavailable' });
-    }
-  },
+  AppState.addEventListener('change', (s: AppStateStatus) => {
+    const nowActive = s === 'active';
+    if (nowActive === appActive) return;
+    appActive = nowActive;
+    apply();
+  });
 
-  stopWatching: () => {
-    const next = Math.max(0, get().watchers - 1);
-    set({ watchers: next });
-    if (next === 0) {
-      posSub?.remove();
-      headSub?.remove();
-      posSub = null;
-      headSub = null;
-    }
-  },
-}));
+  // Re-subscribe when the accuracy preference changes.
+  useSettingsStore.subscribe((s, prev) => {
+    if (s.highAccuracy !== prev.highAccuracy && get().active) apply(true);
+  });
+
+  return {
+    permission: 'undetermined',
+    servicesEnabled: true,
+    fix: null,
+    heading: null,
+    error: null,
+    active: null,
+
+    refreshStatus: async () => {
+      const [permission, servicesEnabled] = await Promise.all([
+        Loc.getPermissionStatus(),
+        Loc.isLocationEnabled(),
+      ]);
+      let error: LocationError = get().error === 'unavailable' ? 'unavailable' : null;
+      if (permission === 'denied') error = 'permission-denied';
+      else if (!servicesEnabled) error = 'services-disabled';
+      set({ permission, servicesEnabled, error });
+    },
+
+    requestPermission: async () => {
+      const permission = await Loc.requestPermission();
+      set({ permission });
+      await get().refreshStatus();
+      if (permission === 'granted') apply(true);
+      return permission === 'granted';
+    },
+
+    acquire: (profile) => {
+      counts[profile] += 1;
+      apply();
+      let released = false;
+      return () => {
+        if (released) return;
+        released = true;
+        counts[profile] = Math.max(0, counts[profile] - 1);
+        apply();
+      };
+    },
+  };
+});

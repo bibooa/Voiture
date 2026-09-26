@@ -1,9 +1,18 @@
 import { create } from 'zustand';
-import type { Coordinate, ParkedLocation } from '@/types';
+import type { ParkedLocation } from '@/types';
 import { StorageKeys, readJSON, writeJSON } from '@/services/storage';
 import { makeId } from '@/utils/id';
 
 const HISTORY_LIMIT = 50;
+
+export type SavedFix = {
+  latitude: number;
+  longitude: number;
+  /** Honest accuracy (m) from the stabiliser. */
+  accuracy: number;
+  sampleCount: number;
+  forced: boolean;
+};
 
 type CarState = {
   hydrated: boolean;
@@ -13,8 +22,10 @@ type CarState = {
   history: ParkedLocation[];
 
   hydrate: () => Promise<void>;
-  /** Save a new parked location from a GPS fix. Returns the record. */
-  saveCar: (fix: Coordinate, address?: string | null) => ParkedLocation;
+  /** Save a new parked location from a stabilised fix. Returns the record. */
+  saveCar: (fix: SavedFix) => ParkedLocation;
+  /** Attach the (asynchronously resolved) address to a record. */
+  setAddress: (id: string, address: string | null) => void;
   rename: (id: string, label: string) => void;
   /** Set an optional detail note (parking floor, zone, spot number…). */
   setNote: (id: string, note: string) => void;
@@ -44,19 +55,29 @@ export const useCarStore = create<CarState>((set, get) => ({
     set({ current, history, hydrated: true });
   },
 
-  saveCar: (fix, address) => {
+  saveCar: (fix) => {
     const record: ParkedLocation = {
       id: makeId('car_'),
       latitude: fix.latitude,
       longitude: fix.longitude,
       accuracy: fix.accuracy,
+      sampleCount: fix.sampleCount,
+      forced: fix.forced,
       savedAt: Date.now(),
-      address: address ?? null,
+      address: null,
     };
     const history = [record, ...get().history].slice(0, HISTORY_LIMIT);
     set({ current: record, history });
     persist({ current: record, history });
     return record;
+  },
+
+  setAddress: (id, address) => {
+    if (!address) return;
+    const history = get().history.map((h) => (h.id === id ? { ...h, address } : h));
+    const current = get().current?.id === id ? { ...get().current!, address } : get().current;
+    set({ history, current });
+    persist({ current, history });
   },
 
   rename: (id, label) => {

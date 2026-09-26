@@ -1,16 +1,23 @@
 /** Shared domain types for VéhiTrack. */
 
-/** A single GPS fix with the metadata we care about. */
-export type Coordinate = {
+import type { StabilizationMode } from '@/location/stabilizer';
+
+export type { GpsQuality } from '@/location/quality';
+export type { StabilizationMode } from '@/location/stabilizer';
+
+/**
+ * The live position of the user — the single source of truth read by every
+ * screen (see store/locationStore).
+ */
+export type LiveFix = {
   latitude: number;
   longitude: number;
-  /** Horizontal accuracy in metres (radius, 68% confidence). Null if unknown. */
+  /** Horizontal accuracy radius in metres as reported by the OS (null = unknown). */
   accuracy: number | null;
-  /** Altitude in metres, if available. */
-  altitude?: number | null;
-  /** Device heading at capture time (degrees, 0 = North), if available. */
-  heading?: number | null;
-  /** Epoch millis when the fix was produced by the OS. */
+  altitude: number | null;
+  /** Speed in m/s (null when unknown). */
+  speed: number | null;
+  /** Epoch millis when the OS produced this fix. */
   timestamp: number;
 };
 
@@ -19,7 +26,7 @@ export type ParkedLocation = {
   id: string;
   latitude: number;
   longitude: number;
-  /** Best horizontal accuracy achieved during capture, in metres. */
+  /** Honest accuracy radius (m) of the stabilised position, rounded up. */
   accuracy: number | null;
   /** Epoch millis when the user saved this location. */
   savedAt: number;
@@ -27,24 +34,25 @@ export type ParkedLocation = {
   label?: string;
   /** Reverse-geocoded approximate address, if it was resolvable. */
   address?: string | null;
-  /** Optional note. */
+  /** Optional detail: floor, zone, spot number… */
   note?: string;
+  /** Number of GPS samples used to compute the position. */
+  sampleCount?: number;
+  /** True when the user chose to save despite an imprecise fix. */
+  forced?: boolean;
 };
 
 /** A user-defined favourite place. */
 export type Favorite = {
   id: string;
   name: string;
-  /** Emoji or icon key used to represent the favourite. */
+  /** Semantic icon key used to represent the favourite. */
   icon: string;
   latitude: number;
   longitude: number;
   address?: string | null;
   createdAt: number;
 };
-
-/** Qualitative accuracy buckets surfaced to the user. */
-export type AccuracyLevel = 'excellent' | 'good' | 'poor' | 'unknown';
 
 export type ThemeMode = 'light' | 'dark' | 'auto';
 export type MapType = 'standard' | 'satellite' | 'hybrid';
@@ -56,8 +64,14 @@ export type Settings = {
   animations: boolean;
   haptics: boolean;
   mapType: MapType;
+  /** Rotate the map with the compass in guidance mode. */
   autoRotateMap: boolean;
+  /** Use every available location source for the best possible fix. */
   highAccuracy: boolean;
+  /** How long to stabilise the position when saving the car. */
+  stabilization: StabilizationMode;
+  /** Fetch real walking routes from an online routing service. */
+  onlineRouting: boolean;
   parkingReminders: boolean;
   onboarded: boolean;
 };

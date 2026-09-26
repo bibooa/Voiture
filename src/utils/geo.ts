@@ -59,30 +59,29 @@ export function compassFromBearing(bearing: number): {
   return COMPASS_FR[index];
 }
 
-/** Format a distance in a compact, French, human-friendly way. */
+/**
+ * Format a distance in a compact, French way. Precision is adapted to the
+ * magnitude so we never display more resolution than GPS can support
+ * (1 m steps below 100 m, 5 m steps up to 1 km).
+ */
 export function formatDistance(meters: number): string {
   if (!isFinite(meters)) return '—';
-  if (meters < 1000) return `${Math.round(meters)} m`;
+  if (meters < 100) return `${Math.round(meters)} m`;
+  if (meters < 1000) return `${Math.round(meters / 5) * 5} m`;
   const km = meters / 1000;
-  return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+  return km < 10 ? `${km.toFixed(1).replace('.', ',')} km` : `${Math.round(km)} km`;
 }
 
 /**
- * Estimated walking time. Uses an average pace of 1.35 m/s (~4.9 km/h),
- * a realistic city walking speed, and never claims sub-minute precision.
+ * Format a real route duration (seconds, as returned by a routing service).
+ * There is intentionally no helper that derives a time from a straight-line
+ * distance: we never display an invented travel time.
  */
-export function formatWalkTime(meters: number): string {
-  const WALK_SPEED = 1.35; // m/s
-  const minutes = meters / WALK_SPEED / 60;
-  if (minutes < 1) return '< 1 min';
-  if (minutes < 60) return `${Math.round(minutes)} min`;
+export function formatDuration(seconds: number): string {
+  if (!isFinite(seconds) || seconds < 0) return '—';
+  const minutes = Math.max(1, Math.round(seconds / 60));
+  if (minutes < 60) return `${minutes} min`;
   const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
+  const m = minutes % 60;
   return m === 0 ? `${h} h` : `${h} h ${m}`;
-}
-
-/** Format accuracy honestly, e.g. "±4 m". Null → unknown. */
-export function formatAccuracy(accuracy: number | null | undefined): string {
-  if (accuracy == null || !isFinite(accuracy)) return 'précision inconnue';
-  return `±${Math.round(accuracy)} m`;
 }

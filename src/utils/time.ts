@@ -59,3 +59,16 @@ export function formatHistoryDate(epochMs: number, now: number = Date.now()): st
   const label = `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`;
   return `${label} — ${time}`;
 }
+
+/** Compact "when": "14:32" today, "hier" yesterday, else "3 mars". */
+export function formatShortWhen(epochMs: number, now: number = Date.now()): string {
+  const d = new Date(epochMs);
+  const today = new Date(now);
+  const yesterday = new Date(now);
+  yesterday.setDate(today.getDate() - 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  if (same(d, today)) return hhmm(d);
+  if (same(d, yesterday)) return 'hier';
+  return `${d.getDate()} ${MOIS[d.getMonth()]}`;
+}

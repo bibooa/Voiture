@@ -61,6 +61,7 @@ src/
 | Domaine | Choix |
 |---|---|
 | Framework | Expo SDK 54, React Native 0.81, TypeScript strict |
+| Tests | Vitest (logique GPS / guidage pure, sans React Native) |
 | Navigation | expo-router (typed routes) |
 | Carte | react-native-maps |
 | Localisation | expo-location (multi-échantillons + fusion) |
@@ -108,6 +109,37 @@ En **Expo Go** la carte fonctionne sans configuration. Pour un **build Android a
 - Suppression totale des données possible à tout moment (Réglages → Confidentialité).
 
 ---
+
+## 📍 Localisation : comment VéhiTrack reste honnête
+
+**Enregistrement (stabilisation)** — `src/location/stabilizer.ts`
+1. Demande haute précision (GNSS + Wi-Fi + réseau ; sur Android, proposition d'activer la « précision Google »).
+2. Collecte 5 à 20 mesures selon le mode (Rapide / Équilibré / Précis) ; les positions en cache antérieures au début sont ignorées.
+3. Écarte les mesures dont la précision annoncée est très inférieure à la médiane, puis les points aberrants (multitrajet) autour d'un centre médian robuste.
+4. Fusionne les mesures retenues avec une pondération 1/précision².
+5. Précision affichée = max(précision réelle d'un échantillon représentatif, dispersion observée), **arrondie au mètre supérieur**. Jamais le σ/√N statistique (les erreurs GPS sont corrélées, ce serait optimiste).
+6. Si la position reste imprécise ou si le téléphone bouge : écran « Position encore imprécise » → Réessayer / Continuer malgré tout.
+
+**Distance & incertitude** — `src/location/guidance.ts`
+- Incertitude sur la distance = √(précision voiture² + précision utilisateur²), toujours affichée à côté de la distance.
+- « Vous êtes probablement arrivé » seulement dans le rayon d'incertitude (min. 8 m), avec hystérésis, et uniquement avec une position fraîche.
+- Pas de flèche « certaine » quand la voiture est dans la marge d'erreur ; flèche atténuée si la direction est approximative ou la boussole mal calibrée.
+
+**Temps réel** — `src/store/locationStore.ts` (source de vérité unique)
+- Profils GPS : `guidance` (1 s + boussole) sur Retrouver, `map` (~4 s) sur l'accueil, coupé ailleurs et en arrière-plan.
+- Fraîcheur affichée (« il y a 3 s »), états « GPS en attente » / « Signal perdu ».
+
+**Itinéraire piéton** — `src/services/routing.ts`
+- Serveur OSRM profil *foot* (OpenStreetMap par défaut, `ROUTING_BASE_URL` pour votre propre instance).
+- Hors ligne ou sans itinéraire : « distance directe », **sans temps de trajet inventé**.
+
+### Tests
+
+```bash
+npm test          # scénarios simulés : ciel dégagé, parking, bâtiment (multitrajet),
+                  # déplacement 10–50 m, GPS faible, perte du signal, hors ligne
+npm run typecheck
+```
 
 ## 📁 Notes d'implémentation
 

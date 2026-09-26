@@ -1,32 +1,62 @@
 import * as Location from 'expo-location';
-import type { Coordinate } from '@/types';
+import { Platform } from 'react-native';
+import type { LiveFix } from '@/types';
+import {
+  fuseSamples,
+  stopReason,
+  usableSamples,
+  STABILIZATION_PROFILES,
+  type FusedFix,
+  type Sample,
+  type StabilizationMode,
+  type StopReason,
+} from '@/location/stabilizer';
 
 /**
- * Location service — the heart of VéhiTrack.
+ * Location service — the only module that talks to expo-location.
  *
- * Responsibilities:
- *  - permission handling (foreground only; we never track in the background)
- *  - acquiring the *most reliable* fix by sampling several readings and
- *    fusing them, rather than trusting a single noisy GPS point
- *  - live position / heading subscriptions for the map & guidance
- *  - best-effort reverse geocoding
+ *  - permissions (foreground only; no background tracking, ever)
+ *  - stabilised acquisition for saving the car (many samples + fusion)
+ *  - live position / heading subscriptions with battery-aware profiles
+ *  - best-effort reverse geocoding with a timeout (works offline: just null)
  *
- * Honesty principle: the accuracy we report is always the accuracy the OS
- * gives us. We never fabricate a tighter figure than the device provides.
+ * Honesty principle: accuracies come from the OS; the stabiliser only ever
+ * widens them (see location/stabilizer.ts).
  */
 
 export type PermissionResult = 'granted' | 'denied' | 'undetermined';
 
-function normalizeFix(loc: Location.LocationObject): Coordinate {
+export class LocationUnavailableError extends Error {
+  constructor() {
+    super('No usable GPS fix could be obtained');
+    this.name = 'LocationUnavailableError';
+  }
+}
+
+function toSample(loc: Location.LocationObject): Sample {
+  return {
+    latitude: loc.coords.latitude,
+    longitude: loc.coords.longitude,
+    accuracy: loc.coords.accuracy ?? NaN,
+    altitude: loc.coords.altitude ?? null,
+    heading: loc.coords.heading ?? null,
+    speed: loc.coords.speed ?? null,
+    timestamp: Math.min(loc.timestamp, Date.now()),
+  };
+}
+
+export function toLiveFix(loc: Location.LocationObject): LiveFix {
   return {
     latitude: loc.coords.latitude,
     longitude: loc.coords.longitude,
     accuracy: loc.coords.accuracy ?? null,
     altitude: loc.coords.altitude ?? null,
-    heading: loc.coords.heading ?? null,
-    timestamp: loc.timestamp,
+    speed: loc.coords.speed != null && loc.coords.speed >= 0 ? loc.coords.speed : null,
+    timestamp: Math.min(loc.timestamp, Date.now()),
   };
 }
+
+// ── permissions & device state ──────────────────────────────────────────────
 
 export async function getPermissionStatus(): Promise<PermissionResult> {
   const { status } = await Location.getForegroundPermissionsAsync();
@@ -38,7 +68,6 @@ export async function requestPermission(): Promise<PermissionResult> {
   return status as PermissionResult;
 }
 
-/** Whether the device's location services (GPS radio) are switched on. */
 export async function isLocationEnabled(): Promise<boolean> {
   try {
     return await Location.hasServicesEnabledAsync();
@@ -47,192 +76,183 @@ export async function isLocationEnabled(): Promise<boolean> {
   }
 }
 
-/** A single, quick fix — good enough for centring the map on open. */
-export async function getQuickPosition(highAccuracy = true): Promise<Coordinate> {
-  const loc = await Location.getCurrentPositionAsync({
-    accuracy: highAccuracy
-      ? Location.Accuracy.High
-      : Location.Accuracy.Balanced,
-  });
-  return normalizeFix(loc);
+/**
+ * On Android, ask the system to enable "Google Location Accuracy" (Wi-Fi and
+ * cell assistance), which markedly improves fixes near buildings. The user may
+ * decline; we carry on with whatever is available.
+ */
+async function ensureBestProviders(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await Location.enableNetworkProviderAsync();
+  } catch {
+    /* declined or unavailable — continue with GPS only */
+  }
 }
 
-export type AcquireProgress = {
-  /** Latest raw sample received. */
-  sample: Coordinate;
-  /** Best fix so far (lowest accuracy radius). */
-  best: Coordinate;
-  /** How many samples collected. */
-  count: number;
+// ── stabilised acquisition ─────────────────────────────────────────────────
+
+export type StabilizationProgress = {
+  usable: number;
+  target: number;
+  elapsedMs: number;
+  maxDurationMs: number;
+  /** Current fused estimate (honest accuracy), null until a usable sample. */
+  estimate: FusedFix | null;
+  /** Latest raw accuracy reported by the OS. */
+  lastAccuracy: number | null;
+};
+
+export type StabilizationResult = {
+  fix: FusedFix;
+  stable: boolean;
+  reason: StopReason;
+  samples: Sample[];
 };
 
 export type AcquireOptions = {
-  highAccuracy?: boolean;
-  /** Give up after this many samples. */
-  maxSamples?: number;
-  /** Give up after this long, even without enough samples. */
-  maxDurationMs?: number;
-  /** Stop early once a fix at least this good (metres) arrives. */
-  targetAccuracy?: number;
-  onProgress?: (p: AcquireProgress) => void;
-  /** Abort signal to cancel acquisition (e.g. user leaves the screen). */
+  mode: StabilizationMode;
+  highAccuracy: boolean;
+  onProgress?: (p: StabilizationProgress) => void;
   signal?: AbortSignal;
 };
 
 /**
- * Acquire the best possible fix by watching the position for a short window,
- * keeping the tightest reading, and fusing the cluster of good samples into a
- * stabilised centroid. The *reported* accuracy is the best (smallest) radius
- * the OS produced — we never claim better than that.
+ * Collect GPS samples until the position is stable (or the profile's sample /
+ * time budget is exhausted), then fuse them. Cached readings older than the
+ * start of the acquisition are ignored so a stale "last known" position can
+ * never become the car's location.
  */
-export async function acquireBestFix(opts: AcquireOptions = {}): Promise<Coordinate> {
-  const {
-    highAccuracy = true,
-    maxSamples = 6,
-    maxDurationMs = 8000,
-    targetAccuracy = 8,
-    onProgress,
-    signal,
-  } = opts;
+export async function acquireStabilizedFix(opts: AcquireOptions): Promise<StabilizationResult> {
+  const profile = STABILIZATION_PROFILES[opts.mode];
+  if (opts.highAccuracy) await ensureBestProviders();
 
-  const samples: Coordinate[] = [];
-  let best: Coordinate | null = null;
+  const start = Date.now();
+  const samples: Sample[] = [];
+  let lastAccuracy: number | null = null;
 
-  const subscription = await Location.watchPositionAsync(
+  const emit = () => {
+    opts.onProgress?.({
+      usable: usableSamples(samples).length,
+      target: profile.maxSamples,
+      elapsedMs: Date.now() - start,
+      maxDurationMs: profile.maxDurationMs,
+      estimate: fuseSamples(samples),
+      lastAccuracy,
+    });
+  };
+
+  const sub = await Location.watchPositionAsync(
     {
-      accuracy: highAccuracy
-        ? Location.Accuracy.BestForNavigation
-        : Location.Accuracy.Balanced,
-      timeInterval: 800,
+      accuracy: opts.highAccuracy ? Location.Accuracy.BestForNavigation : Location.Accuracy.High,
+      timeInterval: 1000,
       distanceInterval: 0,
+      mayShowUserSettingsDialog: true,
     },
     (loc) => {
-      const fix = normalizeFix(loc);
-      samples.push(fix);
-      if (
-        !best ||
-        (fix.accuracy != null &&
-          (best.accuracy == null || fix.accuracy < best.accuracy))
-      ) {
-        best = fix;
-      }
-      onProgress?.({ sample: fix, best: best!, count: samples.length });
+      // Skip cached fixes produced before we started asking.
+      if (loc.timestamp < start - 1000) return;
+      const s = toSample(loc);
+      lastAccuracy = isFinite(s.accuracy) ? s.accuracy : null;
+      samples.push(s);
+      emit();
     }
   );
 
+  let reason: StopReason = null;
   try {
-    await new Promise<void>((resolve) => {
-      const start = Date.now();
-      const onAbort = () => resolve();
-      signal?.addEventListener('abort', onAbort);
-
+    reason = await new Promise<StopReason>((resolve) => {
       const tick = setInterval(() => {
-        const elapsed = Date.now() - start;
-        const reachedTarget =
-          best?.accuracy != null && best.accuracy <= targetAccuracy;
-        if (
-          signal?.aborted ||
-          reachedTarget ||
-          samples.length >= maxSamples ||
-          elapsed >= maxDurationMs
-        ) {
+        if (opts.signal?.aborted) {
           clearInterval(tick);
-          signal?.removeEventListener('abort', onAbort);
-          resolve();
+          resolve(null);
+          return;
         }
-      }, 250);
+        const r = stopReason(samples, profile, Date.now() - start);
+        if (r) {
+          clearInterval(tick);
+          resolve(r);
+        } else {
+          emit(); // keeps elapsed time moving even without new samples
+        }
+      }, 300);
     });
   } finally {
-    subscription.remove();
+    sub.remove();
   }
 
-  if (!best) {
-    // Never got a watch callback — fall back to a one-shot read.
-    return getQuickPosition(highAccuracy);
-  }
-
-  return fuseSamples(samples, best);
+  const fix = fuseSamples(samples);
+  if (!fix) throw new LocationUnavailableError();
+  return { fix, stable: reason === 'stable', reason, samples };
 }
 
-/**
- * Fuse a cluster of samples into a stabilised position. We keep only the
- * samples close to the best accuracy (to drop outliers), weight them by
- * inverse-variance (1/accuracy²) so tighter fixes dominate, and average the
- * coordinates. Reported accuracy stays the best observed radius — honest, not
- * optimistic.
- */
-function fuseSamples(samples: Coordinate[], best: Coordinate): Coordinate {
-  const bestAcc = best.accuracy ?? Infinity;
-  const cluster = samples.filter(
-    (s) => s.accuracy != null && s.accuracy <= Math.max(bestAcc * 1.6, bestAcc + 5)
-  );
-  const pool = cluster.length > 0 ? cluster : [best];
-
-  let wSum = 0;
-  let latSum = 0;
-  let lngSum = 0;
-  for (const s of pool) {
-    const acc = s.accuracy ?? bestAcc;
-    const w = 1 / Math.max(acc * acc, 1);
-    wSum += w;
-    latSum += s.latitude * w;
-    lngSum += s.longitude * w;
-  }
-
-  return {
-    latitude: latSum / wSum,
-    longitude: lngSum / wSum,
-    accuracy: best.accuracy, // honest: the OS's own best estimate
-    altitude: best.altitude ?? null,
-    heading: best.heading ?? null,
-    timestamp: Date.now(),
-  };
-}
+// ── live subscriptions ─────────────────────────────────────────────────────
 
 export type LocationSubscription = { remove: () => void };
 
-/** Live position updates (used on the map and in guidance mode). */
+/** Battery profiles for the live position. */
+export type WatchProfile = 'map' | 'guidance';
+
 export async function watchPosition(
-  cb: (fix: Coordinate) => void,
-  highAccuracy = true
+  profile: WatchProfile,
+  highAccuracy: boolean,
+  cb: (fix: LiveFix) => void
 ): Promise<LocationSubscription> {
-  return Location.watchPositionAsync(
-    {
-      accuracy: highAccuracy ? Location.Accuracy.High : Location.Accuracy.Balanced,
-      timeInterval: 1500,
-      distanceInterval: 1,
-    },
-    (loc) => cb(normalizeFix(loc))
-  );
+  const options: Location.LocationOptions =
+    profile === 'guidance'
+      ? {
+          accuracy: highAccuracy ? Location.Accuracy.BestForNavigation : Location.Accuracy.Balanced,
+          timeInterval: 1000,
+          distanceInterval: 0,
+        }
+      : {
+          accuracy: highAccuracy ? Location.Accuracy.High : Location.Accuracy.Balanced,
+          timeInterval: 4000,
+          distanceInterval: 3,
+        };
+  return Location.watchPositionAsync(options, (loc) => cb(toLiveFix(loc)));
 }
 
-/** Live compass heading (degrees, 0 = North). */
-export async function watchHeading(
-  cb: (headingDeg: number) => void
-): Promise<LocationSubscription> {
-  return Location.watchHeadingAsync((h) => {
-    // Prefer true heading when available, fall back to magnetic.
-    const value = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
-    cb(value);
-  });
-}
-
-/** Best-effort reverse geocode → single-line address, or null. */
-export async function reverseGeocode(
-  latitude: number,
-  longitude: number
-): Promise<string | null> {
+/** A recent last-known fix (≤ maxAgeMs) for an instant first paint, or null. */
+export async function getRecentFix(maxAgeMs = 15000): Promise<LiveFix | null> {
   try {
-    const results = await Location.reverseGeocodeAsync({ latitude, longitude });
-    const p = results[0];
-    if (!p) return null;
-    const parts = [
-      [p.streetNumber, p.street].filter(Boolean).join(' '),
-      p.city ?? p.subregion,
-      p.postalCode,
-    ].filter(Boolean);
-    return parts.join(', ') || null;
+    const loc = await Location.getLastKnownPositionAsync({ maxAge: maxAgeMs, requiredAccuracy: 50 });
+    return loc ? toLiveFix(loc) : null;
   } catch {
     return null;
   }
+}
+
+/** Live compass: heading in degrees (0 = North) + calibration level 0–3. */
+export async function watchHeading(
+  cb: (headingDeg: number, calibration: number | null) => void
+): Promise<LocationSubscription> {
+  return Location.watchHeadingAsync((h) => {
+    const value = h.trueHeading >= 0 ? h.trueHeading : h.magHeading;
+    cb(value, typeof h.accuracy === 'number' ? h.accuracy : null);
+  });
+}
+
+// ── reverse geocoding ──────────────────────────────────────────────────────
+
+/** Best-effort single-line address. Resolves to null offline or after timeout. */
+export async function reverseGeocode(
+  latitude: number,
+  longitude: number,
+  timeoutMs = 5000
+): Promise<string | null> {
+  const lookup = (async () => {
+    try {
+      const results = await Location.reverseGeocodeAsync({ latitude, longitude });
+      const p = results[0];
+      if (!p) return null;
+      const street = [p.streetNumber, p.street].filter(Boolean).join(' ');
+      const parts = [street || p.name, p.city ?? p.subregion].filter(Boolean);
+      return parts.join(', ') || null;
+    } catch {
+      return null;
+    }
+  })();
+  const timeout = new Promise<null>((r) => setTimeout(() => r(null), timeoutMs));
+  return Promise.race([lookup, timeout]);
 }

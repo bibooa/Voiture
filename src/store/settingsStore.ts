@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS: Settings = {
   mapType: 'standard',
   autoRotateMap: false,
   highAccuracy: true,
+  stabilization: 'balanced',
+  onlineRouting: true,
   parkingReminders: false,
   onboarded: false,
 };
@@ -30,8 +32,11 @@ async function persist(state: Settings) {
 }
 
 function pickSettings(s: SettingsState): Settings {
-  const { themeMode, glassEffects, animations, haptics, mapType, autoRotateMap, highAccuracy, parkingReminders, onboarded } = s;
-  return { themeMode, glassEffects, animations, haptics, mapType, autoRotateMap, highAccuracy, parkingReminders, onboarded };
+  const out = {} as Record<keyof Settings, unknown>;
+  (Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[]).forEach((k) => {
+    out[k] = s[k];
+  });
+  return out as Settings;
 }
 
 export const useSettingsStore = create<SettingsState>((set, get) => ({

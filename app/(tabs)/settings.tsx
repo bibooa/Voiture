@@ -19,7 +19,13 @@ import { useLocationStore } from '@/store/locationStore';
 import { clearAllData } from '@/services/storage';
 import { requestNotificationPermission, cancelAllReminders } from '@/services/notifications';
 import { haptics } from '@/services/haptics';
-import type { ThemeMode, MapType } from '@/types';
+import type { ThemeMode, MapType, StabilizationMode } from '@/types';
+
+const STABILIZATION_HELP: Record<StabilizationMode, string> = {
+  fast: '≈ 5 à 8 s, 5 à 10 mesures. Pour les cas pressés, un peu moins stable.',
+  balanced: '≈ 8 à 14 s, 8 à 15 mesures. Le meilleur compromis au quotidien.',
+  precise: '≈ 12 à 22 s, jusqu’à 20 mesures. Position la plus stable possible.',
+};
 
 function Group({ title, children, delay = 0 }: { title: string; children: React.ReactNode; delay?: number }) {
   const t = useTheme();
@@ -112,20 +118,47 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="accuracy"
             label="Haute précision"
-            description="Utilise le GPS/GNSS au maximum pour une position plus fiable."
+            description="Utilise toutes les sources disponibles (GPS/GNSS, Wi-Fi, réseau mobile) pour obtenir la meilleure position possible."
             right={<Toggle value={s.highAccuracy} onValueChange={(v) => s.set('highAccuracy', v)} />}
+          />
+          <SettingsRow
+            icon="clock"
+            label="Temps de stabilisation"
+            description={STABILIZATION_HELP[s.stabilization]}
+            below={
+              <SegmentedControl<StabilizationMode>
+                value={s.stabilization}
+                onChange={(v) => s.set('stabilization', v)}
+                options={[
+                  { value: 'fast', label: 'Rapide' },
+                  { value: 'balanced', label: 'Équilibré' },
+                  { value: 'precise', label: 'Précis' },
+                ]}
+              />
+            }
+          />
+          <SettingsRow
+            icon="walk"
+            label="Itinéraires piétons en ligne"
+            description="Calcule un vrai trajet à pied (OpenStreetMap). Seuls le départ et l’arrivée sont envoyés. Désactivé : distance à vol d’oiseau, tout reste sur l’appareil."
+            right={<Toggle value={s.onlineRouting} onValueChange={(v) => s.set('onlineRouting', v)} />}
           />
           <SettingsRow
             icon="lock"
             label="Autorisation de localisation"
             description={
               permission === 'granted'
-                ? 'Autorisée (pendant l\'utilisation)'
+                ? 'Autorisée pendant l’utilisation de l’app'
                 : permission === 'denied'
-                ? 'Refusée — appuyez pour ouvrir les réglages'
-                : 'Non déterminée'
+                  ? 'Refusée — appuyez pour ouvrir les réglages'
+                  : 'Non déterminée'
             }
             onPress={() => Linking.openSettings()}
+          />
+          <SettingsRow
+            icon="shield"
+            label="GPS actif uniquement lorsque nécessaire"
+            description="Précision maximale pendant l’enregistrement et le guidage, fréquence réduite sur l’accueil, GPS coupé en arrière-plan. Aucun suivi en arrière-plan."
             last
           />
         </Group>
@@ -150,7 +183,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="compass"
             label="Rotation automatique"
-            description="Oriente la carte selon la direction du téléphone."
+            description="En mode Retrouver, oriente la carte selon la boussole (si elle est fiable)."
             right={<Toggle value={s.autoRotateMap} onValueChange={(v) => s.set('autoRotateMap', v)} />}
             last
           />

@@ -1,70 +1,78 @@
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { AppText } from './AppText';
+
+export type ArrowMode =
+  /** Heading-relative: points where to walk (compass available). */
+  | 'compass'
+  /** No compass: points to the true bearing with north at the top. */
+  | 'north'
+  /** Direction is meaningless (inside the GPS uncertainty). */
+  | 'none'
+  /** Probably arrived. */
+  | 'arrived';
 
 type Props = {
-  /**
-   * Rotation in degrees for the arrow, i.e. the bearing to the car relative to
-   * the device heading (0 = car is straight ahead / North of the device).
-   */
   rotation: number;
+  mode: ArrowMode;
+  /** Low confidence renders the arrow muted with a dashed ring. */
+  lowConfidence?: boolean;
   size?: number;
 };
 
 /**
- * The big guidance arrow. It rotates smoothly toward the car. When device
- * heading is available the caller passes a heading-relative angle so the arrow
- * points where to physically walk; otherwise it points to true bearing.
+ * Guidance arrow. It never looks more certain than the data: a muted arrow and
+ * dashed ring when confidence is low, no arrow at all when the car is within
+ * the GPS uncertainty.
  */
-export function DirectionArrow({ rotation, size = 200 }: Props) {
+export function DirectionArrow({ rotation, mode, lowConfidence, size = 96 }: Props) {
   const t = useTheme();
   const angle = useSharedValue(rotation);
 
   useEffect(() => {
-    // Take the shortest rotational path so it never spins the long way round.
     const current = angle.value % 360;
-    let target = rotation % 360;
-    const delta = ((target - current + 540) % 360) - 180;
-    angle.value = t.animations
-      ? withSpring(current + delta, { damping: 14, stiffness: 90 })
-      : current + delta;
+    const delta = ((rotation % 360) - current + 540) % 360 - 180;
+    angle.value = t.animations ? withSpring(current + delta, { damping: 16, stiffness: 110 }) : current + delta;
   }, [rotation, angle, t.animations]);
 
   const arrowStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${angle.value}deg` }] }));
+
+  const accent = mode === 'arrived' ? t.colors.car : t.colors.primary;
+  const muted = lowConfidence || mode === 'none';
 
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <View
         style={[
           styles.ring,
-          { width: size, height: size, borderRadius: size / 2, borderColor: t.colors.glassBorder },
-        ]}
-      />
-      <View
-        style={[
-          styles.ring,
           {
-            width: size * 0.72,
-            height: size * 0.72,
-            borderRadius: size,
-            borderColor: t.colors.glassBorder,
-            opacity: 0.6,
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderColor: muted ? t.colors.textMuted : accent + '88',
+            borderStyle: muted ? 'dashed' : 'solid',
+            backgroundColor: accent + '14',
           },
         ]}
       />
-      <Animated.View style={arrowStyle}>
-        <LinearGradient
-          colors={t.colors.primaryGradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.arrow, { shadowColor: t.colors.primary }]}
-        >
-          <Ionicons name="arrow-up" size={52} color="#fff" />
-        </LinearGradient>
-      </Animated.View>
+      {mode === 'north' ? (
+        <AppText variant="label" style={[styles.north, { fontSize: 9 }]} tone="muted">
+          N
+        </AppText>
+      ) : null}
+
+      {mode === 'arrived' ? (
+        <Ionicons name="checkmark" size={size * 0.46} color={accent} />
+      ) : mode === 'none' ? (
+        <Ionicons name="scan-outline" size={size * 0.42} color={t.colors.textMuted} />
+      ) : (
+        <Animated.View style={[arrowStyle, { opacity: muted ? 0.45 : 1 }]}>
+          <Ionicons name="navigate" size={size * 0.46} color={accent} style={{ transform: [{ rotate: '-45deg' }] }} />
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -72,15 +80,5 @@ export function DirectionArrow({ rotation, size = 200 }: Props) {
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', justifyContent: 'center' },
   ring: { position: 'absolute', borderWidth: 1.5 },
-  arrow: {
-    width: 108,
-    height: 108,
-    borderRadius: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowOpacity: 0.55,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 10,
-  },
+  north: { position: 'absolute', top: 4 },
 });
