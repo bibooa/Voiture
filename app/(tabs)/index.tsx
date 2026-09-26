@@ -1,12 +1,11 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, Linking } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { View, StyleSheet, Pressable, Linking, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeIn } from 'react-native-reanimated';
 
 import {
-  MapCanvas,
-  type MapCanvasHandle,
+  AmbientBackground,
   AppText,
   Icon,
   GlassCard,
@@ -15,203 +14,185 @@ import {
   SaveConfirmation,
   GpsSearchingOverlay,
   PromptModal,
+  Pulse,
 } from '@/components';
 import { useTheme } from '@/theme';
 import { useLiveLocation } from '@/hooks/useLiveLocation';
 import { useSaveCar } from '@/hooks/useSaveCar';
 import { useCarStore } from '@/store/carStore';
-import { useFavoritesStore } from '@/store/favoritesStore';
-import { useSettingsStore } from '@/store/settingsStore';
 import { distanceMeters, formatDistance, formatWalkTime, formatAccuracy } from '@/utils/geo';
 import { accuracyLevel } from '@/utils/accuracy';
 import { timeAgo } from '@/utils/time';
-import { haptics } from '@/services/haptics';
 
 export default function HomeScreen() {
   const t = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const mapRef = useRef<MapCanvasHandle>(null);
 
   const { fix, error } = useLiveLocation();
   const current = useCarStore((s) => s.current);
   const setNote = useCarStore((s) => s.setNote);
-  const favorites = useFavoritesStore((s) => s.favorites);
-  const mapType = useSettingsStore((s) => s.mapType);
   const { state, save, cancel, dismissConfirmation } = useSaveCar();
 
   const [noteOpen, setNoteOpen] = useState(false);
 
-  const car = current ? { latitude: current.latitude, longitude: current.longitude } : null;
-  const user = fix ? { latitude: fix.latitude, longitude: fix.longitude } : null;
-
   const distance = useMemo(() => {
-    if (!user || !car) return null;
-    return distanceMeters(user, car);
-  }, [user, car]);
-
-  const recenter = () => {
-    haptics.light();
-    const points = [user, car].filter(Boolean) as { latitude: number; longitude: number }[];
-    if (points.length) mapRef.current?.fitToPoints(points);
-  };
+    if (!fix || !current) return null;
+    return distanceMeters(
+      { latitude: fix.latitude, longitude: fix.longitude },
+      { latitude: current.latitude, longitude: current.longitude }
+    );
+  }, [fix, current]);
 
   return (
-    <View style={styles.root}>
-      <MapCanvas
-        ref={mapRef}
-        user={user}
-        userAccuracy={fix?.accuracy ?? null}
-        car={car}
-        favorites={favorites}
-        showRoute
-        mapType={mapType}
-        onMarkerPress={() => car && mapRef.current?.centerOn(car)}
-      />
-
-      {/* Top floating header */}
-      <View style={[styles.topBar, { top: insets.top + 8 }]} pointerEvents="box-none">
-        <Animated.View entering={FadeIn.duration(400)}>
-          <GlassCard padded={false} radius={t.radius.pill} style={styles.brandPill}>
-            <View style={styles.brandRow}>
-              <View style={[styles.brandDot, { backgroundColor: t.colors.primary }]}>
-                <Icon name="car" size={15} color="#fff" />
-              </View>
-              <AppText variant="headline" weight="bold" style={{ marginLeft: 9, letterSpacing: 0.2 }}>
+    <AmbientBackground>
+      <View style={{ flex: 1, paddingTop: insets.top }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.brandRow}>
+            <View style={[styles.brandDot, { backgroundColor: t.colors.primary }]}>
+              <Icon name="car" size={18} color="#fff" />
+            </View>
+            <View style={{ marginLeft: 12 }}>
+              <AppText variant="title" weight="bold">
                 Garée
               </AppText>
+              <AppText variant="caption" tone="secondary">
+                Votre voiture, retrouvée.
+              </AppText>
             </View>
-          </GlassCard>
-        </Animated.View>
-
-        <Pressable onPress={recenter} accessibilityLabel="Recentrer la carte">
-          <GlassCard padded={false} radius={t.radius.pill} style={styles.iconPill}>
-            <Icon name="locate" size={20} color={t.colors.text} />
-          </GlassCard>
-        </Pressable>
-      </View>
-
-      {/* Error banner (permission / services) */}
-      {error ? (
-        <Animated.View entering={FadeInDown} style={[styles.banner, { top: insets.top + 62 }]}>
-          <GlassCard strong>
-            <View style={styles.bannerRow}>
-              <Icon name="warning" size={22} color={t.colors.warning} />
-              <View style={{ flex: 1, marginLeft: 12 }}>
-                <AppText variant="callout" weight="semibold">
-                  {error === 'services-disabled' ? 'Localisation désactivée' : 'Permission requise'}
-                </AppText>
-                <AppText variant="caption" tone="secondary" style={{ marginTop: 2 }}>
-                  {error === 'services-disabled'
-                    ? 'Activez la localisation de votre téléphone.'
-                    : 'Autorisez la localisation pour enregistrer votre voiture.'}
-                </AppText>
-              </View>
-              <GlassButton label="Réglages" compact onPress={() => Linking.openSettings()} />
+          </View>
+          <Pressable onPress={() => router.push('/settings')} accessibilityLabel="Réglages" hitSlop={10}>
+            <View style={[styles.iconBtn, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
+              <Icon name="settings" size={20} color={t.colors.text} />
             </View>
-          </GlassCard>
-        </Animated.View>
-      ) : null}
+          </Pressable>
+        </View>
 
-      {/* Bottom control card */}
-      <Animated.View
-        entering={FadeInDown.duration(450)}
-        style={[styles.bottom, { paddingBottom: insets.bottom + 92 }]}
-        pointerEvents="box-none"
-      >
-        <GlassCard strong>
-          {current ? (
-            <>
-              <View style={styles.cardHeader}>
-                <View style={[styles.carTile, { borderColor: t.colors.glassBorder }]}>
-                  <Icon name="car" size={26} color={t.colors.car} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <AppText variant="caption" tone="muted" weight="semibold">
-                    VOTRE VOITURE
-                  </AppText>
-                  <AppText variant="headline" weight="bold" numberOfLines={1} style={{ marginTop: 1 }}>
-                    {current.label ?? current.address ?? 'Position enregistrée'}
-                  </AppText>
-                  <AppText variant="caption" tone="secondary" style={{ marginTop: 2 }}>
-                    Enregistrée {timeAgo(current.savedAt)}
-                  </AppText>
-                </View>
-              </View>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 130, flexGrow: 1 }}
+        >
+          {/* Hero visual */}
+          <View style={styles.hero}>
+            {current ? <Pulse color={t.colors.car} size={190} rings={2} /> : null}
+            <Animated.View
+              entering={FadeIn.duration(400)}
+              style={[
+                styles.heroBadge,
+                {
+                  borderColor: t.colors.glassBorder,
+                  backgroundColor: t.colors.glassStrong,
+                  shadowColor: current ? t.colors.car : t.colors.primary,
+                },
+              ]}
+            >
+              <Icon name={current ? 'car' : 'pin'} size={62} color={current ? t.colors.car : t.colors.primary} />
+            </Animated.View>
+          </View>
 
-              {current.note ? (
-                <View style={[styles.noteChip, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
-                  <Icon name="floor" size={15} color={t.colors.primary} />
-                  <AppText variant="caption" weight="medium" style={{ marginLeft: 8, flex: 1 }} numberOfLines={2}>
-                    {current.note}
-                  </AppText>
-                  <Pressable onPress={() => setNoteOpen(true)} hitSlop={8}>
-                    <Icon name="edit" size={15} color={t.colors.textMuted} />
-                  </Pressable>
+          {/* Error banner */}
+          {error ? (
+            <Animated.View entering={FadeInDown} style={{ marginBottom: 14 }}>
+              <GlassCard strong>
+                <View style={styles.bannerRow}>
+                  <Icon name="warning" size={22} color={t.colors.warning} />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <AppText variant="callout" weight="semibold">
+                      {error === 'services-disabled' ? 'Localisation désactivée' : 'Permission requise'}
+                    </AppText>
+                    <AppText variant="caption" tone="secondary" style={{ marginTop: 2 }}>
+                      {error === 'services-disabled'
+                        ? 'Activez la localisation de votre téléphone.'
+                        : 'Autorisez la localisation pour enregistrer votre voiture.'}
+                    </AppText>
+                  </View>
+                  <GlassButton label="Réglages" compact onPress={() => Linking.openSettings()} />
                 </View>
-              ) : null}
+              </GlassCard>
+            </Animated.View>
+          ) : null}
 
-              {/* Stats strip */}
-              <View style={[styles.stats, { borderColor: t.colors.glassBorder }]}>
-                <Stat icon="navigate" value={distance != null ? formatDistance(distance) : '—'} label="Distance" />
-                <View style={[styles.divider, { backgroundColor: t.colors.glassBorder }]} />
-                <Stat icon="walk" value={distance != null ? formatWalkTime(distance) : '—'} label="À pied" />
-                <View style={[styles.divider, { backgroundColor: t.colors.glassBorder }]} />
-                <StatAccuracy accuracy={current.accuracy} />
-              </View>
+          {/* Main card */}
+          <Animated.View entering={FadeInDown.duration(400)}>
+            <GlassCard strong>
+              {current ? (
+                <>
+                  <View style={styles.cardHeader}>
+                    <View style={[styles.carTile, { borderColor: t.colors.glassBorder }]}>
+                      <Icon name="car" size={26} color={t.colors.car} />
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 14 }}>
+                      <AppText variant="caption" tone="muted" weight="semibold">
+                        VOTRE VOITURE
+                      </AppText>
+                      <AppText variant="headline" weight="bold" numberOfLines={1} style={{ marginTop: 1 }}>
+                        {current.label ?? current.address ?? 'Position enregistrée'}
+                      </AppText>
+                      <AppText variant="caption" tone="secondary" style={{ marginTop: 2 }}>
+                        Enregistrée {timeAgo(current.savedAt)}
+                      </AppText>
+                    </View>
+                  </View>
 
-              <View style={styles.actions}>
-                <PrimaryButton
-                  label="Me guider vers ma voiture"
-                  icon="navigate"
-                  onPress={() => router.push('/find')}
-                  style={{ flex: 1 }}
-                />
-              </View>
-              <View style={styles.secondaryRow}>
-                <GlassButton
-                  label="Réenregistrer"
-                  icon="pin"
-                  onPress={save}
-                  compact
-                  style={{ flex: 1 }}
-                />
-                <GlassButton
-                  label={current.note ? 'Modifier le repère' : 'Ajouter un repère'}
-                  icon="floor"
-                  onPress={() => setNoteOpen(true)}
-                  compact
-                  style={{ flex: 1 }}
-                />
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.cardHeader}>
-                <View style={[styles.carTile, { borderColor: t.colors.glassBorder }]}>
-                  <Icon name="pin" size={24} color={t.colors.primary} />
-                </View>
-                <View style={{ flex: 1, marginLeft: 14 }}>
-                  <AppText variant="headline" weight="bold">
+                  {current.note ? (
+                    <View style={[styles.noteChip, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
+                      <Icon name="floor" size={15} color={t.colors.primary} />
+                      <AppText variant="caption" weight="medium" style={{ marginLeft: 8, flex: 1 }} numberOfLines={2}>
+                        {current.note}
+                      </AppText>
+                      <Pressable onPress={() => setNoteOpen(true)} hitSlop={8}>
+                        <Icon name="edit" size={15} color={t.colors.textMuted} />
+                      </Pressable>
+                    </View>
+                  ) : null}
+
+                  <View style={[styles.stats, { borderColor: t.colors.glassBorder }]}>
+                    <Stat icon="navigate" value={distance != null ? formatDistance(distance) : '—'} label="Distance" />
+                    <View style={[styles.divider, { backgroundColor: t.colors.glassBorder }]} />
+                    <Stat icon="walk" value={distance != null ? formatWalkTime(distance) : '—'} label="À pied" />
+                    <View style={[styles.divider, { backgroundColor: t.colors.glassBorder }]} />
+                    <StatAccuracy accuracy={current.accuracy} />
+                  </View>
+
+                  <PrimaryButton
+                    label="Me guider vers ma voiture"
+                    icon="navigate"
+                    onPress={() => router.push('/find')}
+                    style={{ marginTop: 16 }}
+                  />
+                  <View style={styles.secondaryRow}>
+                    <GlassButton label="Réenregistrer" icon="pin" onPress={save} compact style={{ flex: 1 }} />
+                    <GlassButton
+                      label={current.note ? 'Modifier le repère' : 'Ajouter un repère'}
+                      icon="floor"
+                      onPress={() => setNoteOpen(true)}
+                      compact
+                      style={{ flex: 1 }}
+                    />
+                  </View>
+                </>
+              ) : (
+                <>
+                  <AppText variant="title" center>
                     Où est votre voiture ?
                   </AppText>
-                  <AppText variant="caption" tone="secondary" style={{ marginTop: 3 }}>
-                    Garez-vous, appuyez, et retrouvez-la en un instant.
+                  <AppText variant="body" tone="secondary" center style={{ marginTop: 8, marginBottom: 20 }}>
+                    Garez-vous, appuyez sur le bouton, et retrouvez-la en un instant.
                   </AppText>
-                </View>
-              </View>
-              <PrimaryButton
-                label="ENREGISTRER MA POSITION"
-                icon="car"
-                variant="car"
-                onPress={save}
-                loading={state.searching}
-                style={{ marginTop: 18 }}
-              />
-            </>
-          )}
-        </GlassCard>
-      </Animated.View>
+                  <PrimaryButton
+                    label="ENREGISTRER MA POSITION"
+                    icon="car"
+                    variant="car"
+                    onPress={save}
+                    loading={state.searching}
+                  />
+                </>
+              )}
+            </GlassCard>
+          </Animated.View>
+        </ScrollView>
+      </View>
 
       <GpsSearchingOverlay
         visible={state.searching}
@@ -223,10 +204,7 @@ export default function HomeScreen() {
         visible={!!state.confirmation}
         accuracy={state.confirmation?.accuracy ?? null}
         address={state.confirmation?.address}
-        onDone={() => {
-          dismissConfirmation();
-          if (car) mapRef.current?.centerOn(car);
-        }}
+        onDone={dismissConfirmation}
       />
 
       <PromptModal
@@ -240,7 +218,7 @@ export default function HomeScreen() {
           setNoteOpen(false);
         }}
       />
-    </View>
+    </AmbientBackground>
   );
 }
 
@@ -287,22 +265,38 @@ function StatAccuracy({ accuracy }: { accuracy: number | null }) {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1 },
-  topBar: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
+  header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
   },
-  brandPill: { paddingHorizontal: 14, height: 46, justifyContent: 'center' },
   brandRow: { flexDirection: 'row', alignItems: 'center' },
-  brandDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  iconPill: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' },
-  banner: { position: 'absolute', left: 16, right: 16 },
+  brandDot: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  iconBtn: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+  },
+  hero: { height: 210, alignItems: 'center', justifyContent: 'center' },
+  heroBadge: {
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 8,
+  },
   bannerRow: { flexDirection: 'row', alignItems: 'center' },
-  bottom: { position: 'absolute', left: 16, right: 16, bottom: 0 },
   cardHeader: { flexDirection: 'row', alignItems: 'center' },
   carTile: {
     width: 54,
@@ -331,6 +325,5 @@ const styles = StyleSheet.create({
   },
   stat: { flex: 1, alignItems: 'center' },
   divider: { width: StyleSheet.hairlineWidth, height: 34 },
-  actions: { flexDirection: 'row', marginTop: 16 },
   secondaryRow: { flexDirection: 'row', gap: 10, marginTop: 10 },
 });
