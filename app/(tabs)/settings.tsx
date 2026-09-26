@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Alert, ScrollView, Share, Linking } from 'react-native';
+import { StyleSheet, Alert, ScrollView, Share, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -135,18 +135,16 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="map"
             label="Type de carte"
-            right={
-              <View style={{ width: 200 }}>
-                <SegmentedControl<MapType>
-                  value={s.mapType}
-                  onChange={(v) => s.setMapType(v)}
-                  options={[
-                    { value: 'standard', label: 'Plan' },
-                    { value: 'satellite', label: 'Satellite' },
-                    { value: 'hybrid', label: 'Hybride' },
-                  ]}
-                />
-              </View>
+            below={
+              <SegmentedControl<MapType>
+                value={s.mapType}
+                onChange={(v) => s.setMapType(v)}
+                options={[
+                  { value: 'standard', label: 'Plan' },
+                  { value: 'satellite', label: 'Satellite' },
+                  { value: 'hybrid', label: 'Hybride' },
+                ]}
+              />
             }
           />
           <SettingsRow
@@ -174,18 +172,16 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="theme"
             label="Thème"
-            right={
-              <View style={{ width: 210 }}>
-                <SegmentedControl<ThemeMode>
-                  value={s.themeMode}
-                  onChange={(v) => s.setThemeMode(v)}
-                  options={[
-                    { value: 'light', label: 'Clair' },
-                    { value: 'dark', label: 'Sombre' },
-                    { value: 'auto', label: 'Auto' },
-                  ]}
-                />
-              </View>
+            below={
+              <SegmentedControl<ThemeMode>
+                value={s.themeMode}
+                onChange={(v) => s.setThemeMode(v)}
+                options={[
+                  { value: 'light', label: 'Clair' },
+                  { value: 'dark', label: 'Sombre' },
+                  { value: 'auto', label: 'Auto' },
+                ]}
+              />
             }
           />
           <SettingsRow

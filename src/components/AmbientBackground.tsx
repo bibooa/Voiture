@@ -53,7 +53,7 @@ export function AmbientBackground({ children }: { children?: React.ReactNode }) 
     ],
   }));
 
-  const orbSize = width * 0.9;
+  const orbSize = width * 0.78;
 
   return (
     <View style={[styles.root, { backgroundColor: t.colors.background }]}>
@@ -67,12 +67,12 @@ export function AmbientBackground({ children }: { children?: React.ReactNode }) 
         pointerEvents="none"
         style={[
           styles.orb,
-          { width: orbSize, height: orbSize, top: -orbSize * 0.25, left: -orbSize * 0.2 },
+          { width: orbSize, height: orbSize, top: -orbSize * 0.32, left: -orbSize * 0.28 },
           orbA,
         ]}
       >
         <LinearGradient
-          colors={[t.colors.primary + '55', 'transparent']}
+          colors={[t.colors.primary + (t.colors.isDark ? '26' : '30'), 'transparent']}
           style={styles.orbFill}
         />
       </Animated.View>
@@ -83,14 +83,14 @@ export function AmbientBackground({ children }: { children?: React.ReactNode }) 
           {
             width: orbSize,
             height: orbSize,
-            bottom: -orbSize * 0.3,
-            right: -orbSize * 0.25,
+            bottom: -orbSize * 0.4,
+            right: -orbSize * 0.32,
           },
           orbB,
         ]}
       >
         <LinearGradient
-          colors={[t.colors.car + '3A', 'transparent']}
+          colors={[t.colors.primary + (t.colors.isDark ? '16' : '22'), 'transparent']}
           style={styles.orbFill}
         />
       </Animated.View>
