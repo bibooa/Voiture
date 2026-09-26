@@ -1,32 +1,44 @@
-/** Date/time formatting helpers in French. */
+/**
+ * Date/time formatting helpers in French.
+ *
+ * Implemented without `Intl.RelativeTimeFormat` / `Intl.DateTimeFormat`, because
+ * the Hermes engine on Android does not ship those APIs by default — using them
+ * crashes at module load. These hand-rolled formatters are fully offline and
+ * deterministic.
+ */
 
-const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const MOIS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
 
-/** "il y a 8 min", "il y a 2 h", "hier"… relative to now. */
+const pad2 = (n: number) => (n < 10 ? `0${n}` : `${n}`);
+const hhmm = (d: Date) => `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+
+/** "à l'instant", "il y a 8 min", "il y a 2 h", "hier", "il y a 3 j"… */
 export function timeAgo(epochMs: number, now: number = Date.now()): string {
-  const diffSec = Math.round((epochMs - now) / 1000);
-  const absSec = Math.abs(diffSec);
+  const diffSec = Math.round((now - epochMs) / 1000);
 
-  if (absSec < 60) return "à l'instant";
+  if (diffSec < 0) return "à l'instant";
+  if (diffSec < 60) return "à l'instant";
+
   const diffMin = Math.round(diffSec / 60);
-  if (Math.abs(diffMin) < 60) return rtf.format(diffMin, 'minute');
-  const diffHour = Math.round(diffMin / 60);
-  if (Math.abs(diffHour) < 24) return rtf.format(diffHour, 'hour');
-  const diffDay = Math.round(diffHour / 24);
-  if (Math.abs(diffDay) < 30) return rtf.format(diffDay, 'day');
-  const diffMonth = Math.round(diffDay / 30);
-  return rtf.format(diffMonth, 'month');
-}
+  if (diffMin < 60) return `il y a ${diffMin} min`;
 
-const dayFmt = new Intl.DateTimeFormat('fr-FR', {
-  weekday: 'long',
-  day: 'numeric',
-  month: 'long',
-});
-const timeFmt = new Intl.DateTimeFormat('fr-FR', {
-  hour: '2-digit',
-  minute: '2-digit',
-});
+  const diffHour = Math.round(diffMin / 60);
+  if (diffHour < 24) return `il y a ${diffHour} h`;
+
+  const diffDay = Math.round(diffHour / 24);
+  if (diffDay === 1) return 'hier';
+  if (diffDay < 30) return `il y a ${diffDay} j`;
+
+  const diffMonth = Math.round(diffDay / 30);
+  if (diffMonth < 12) return `il y a ${diffMonth} mois`;
+
+  const diffYear = Math.round(diffMonth / 12);
+  return `il y a ${diffYear} an${diffYear > 1 ? 's' : ''}`;
+}
 
 /** "Aujourd'hui — 14:32" / "Hier — 18:47" / "lundi 3 mars — 09:10". */
 export function formatHistoryDate(epochMs: number, now: number = Date.now()): string {
@@ -40,8 +52,10 @@ export function formatHistoryDate(epochMs: number, now: number = Date.now()): st
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate();
 
-  const time = timeFmt.format(d);
+  const time = hhmm(d);
   if (sameDay(d, today)) return `Aujourd'hui — ${time}`;
   if (sameDay(d, yesterday)) return `Hier — ${time}`;
-  return `${dayFmt.format(d)} — ${time}`;
+
+  const label = `${JOURS[d.getDay()]} ${d.getDate()} ${MOIS[d.getMonth()]}`;
+  return `${label} — ${time}`;
 }
