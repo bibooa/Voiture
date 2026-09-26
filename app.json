@@ -1,0 +1,70 @@
+{
+  "expo": {
+    "name": "Garée",
+    "slug": "garee",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "garee",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0E1A"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.garee.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture. Rien n'est envoyé sur un serveur.",
+        "UIBackgroundModes": [],
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0E1A"
+      },
+      "package": "com.garee.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Garée utilise votre position uniquement au moment où vous enregistrez ou retrouvez votre voiture."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#5B8CFF"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0A0E1A",
+          "image": "./assets/splash.png",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
