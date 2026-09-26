@@ -53,7 +53,8 @@ export function GlassButton({ label, icon, onPress, compact, style, tint, access
       {t.glass ? (
         <BlurView intensity={30} tint={t.colors.blurTint} style={StyleSheet.absoluteFill} />
       ) : null}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.glass }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.cardScrim }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.glassStrong }]} />
       <View style={styles.row}>
         {icon ? (
           <Icon

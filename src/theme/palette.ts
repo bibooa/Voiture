@@ -22,6 +22,13 @@ export type ColorScheme = {
   glassBorder: string;
   /** Top highlight reflection on glass. */
   glassHighlight: string;
+  /**
+   * Opaque-ish scrim painted behind card content so text stays legible on ANY
+   * background (including bright satellite imagery). This is what makes the
+   * frosted card readable — the blur alone is not enough over busy photos.
+   */
+  cardScrim: string;
+  cardScrimStrong: string;
 
   /** Primary brand accent. */
   primary: string;
@@ -59,8 +66,10 @@ export const darkPalette: ColorScheme = {
 
   glass: 'rgba(255,255,255,0.06)',
   glassStrong: 'rgba(255,255,255,0.10)',
-  glassBorder: 'rgba(255,255,255,0.14)',
+  glassBorder: 'rgba(255,255,255,0.16)',
   glassHighlight: 'rgba(255,255,255,0.22)',
+  cardScrim: 'rgba(10,14,26,0.62)',
+  cardScrimStrong: 'rgba(9,13,24,0.80)',
 
   primary: '#5B8CFF',
   primaryDeep: '#3E6BFF',
@@ -92,6 +101,8 @@ export const lightPalette: ColorScheme = {
   glassStrong: 'rgba(255,255,255,0.72)',
   glassBorder: 'rgba(255,255,255,0.85)',
   glassHighlight: 'rgba(255,255,255,0.95)',
+  cardScrim: 'rgba(244,247,253,0.80)',
+  cardScrimStrong: 'rgba(248,250,255,0.90)',
 
   primary: '#3E6BFF',
   primaryDeep: '#2A54E8',

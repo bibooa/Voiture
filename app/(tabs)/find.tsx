@@ -129,7 +129,7 @@ export default function FindScreen() {
                 <Icon name="checkmark" size={54} color="#fff" />
               </LinearGradient>
             ) : (
-              <DirectionArrow rotation={arrowRotation} size={150} />
+              <DirectionArrow rotation={arrowRotation} size={132} />
             )}
             <View style={styles.info}>
               <AppText variant="label" tone="muted">
@@ -231,9 +231,9 @@ const styles = StyleSheet.create({
   bottom: { position: 'absolute', left: 16, right: 16, bottom: 0 },
   arrowRow: { flexDirection: 'row', alignItems: 'center' },
   arrivedCircle: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 132,
+    height: 132,
+    borderRadius: 66,
     alignItems: 'center',
     justifyContent: 'center',
     shadowOpacity: 0.5,

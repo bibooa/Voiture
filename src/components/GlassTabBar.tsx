@@ -34,8 +34,9 @@ export function GlassTabBar({ state, navigation }: BottomTabBarProps) {
         ]}
       >
         {t.glass ? (
-          <BlurView intensity={50} tint={t.colors.blurTint} style={StyleSheet.absoluteFill} />
+          <BlurView intensity={55} tint={t.colors.blurTint} style={StyleSheet.absoluteFill} />
         ) : null}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.cardScrimStrong }]} />
         <View style={[StyleSheet.absoluteFill, { backgroundColor: t.colors.glassStrong }]} />
 
         {state.routes.map((route, i) => {

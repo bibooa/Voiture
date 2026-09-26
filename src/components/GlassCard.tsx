@@ -49,7 +49,11 @@ export function GlassCard({
 
   const inner: ViewStyle = { padding: padded ? t.spacing.xl : 0 };
 
-  const fill = strong ? t.colors.glassStrong : t.colors.glass;
+  // A frosted, legible surface: blur + an opaque-ish scrim so text stays
+  // readable over any background (dark map OR bright satellite), topped with a
+  // subtle white tint that keeps the "glass" character.
+  const scrim = strong ? t.colors.cardScrimStrong : t.colors.cardScrim;
+  const tint = strong ? t.colors.glassStrong : t.colors.glass;
 
   return (
     <View style={[containerStyle, style]} {...rest}>
@@ -60,7 +64,8 @@ export function GlassCard({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: fill }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: scrim }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: tint }]} />
       {/* Top light reflection */}
       <LinearGradient
         colors={[t.colors.glassHighlight, 'transparent']}
