@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Pressable, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -68,7 +68,10 @@ function TabItem({
 }) {
   const t = useTheme();
   const lift = useSharedValue(focused ? 1 : 0);
-  lift.value = t.animations ? withSpring(focused ? 1 : 0, t.spring.snappy) : focused ? 1 : 0;
+  // In an effect, never during render (Reanimated strict mode warns otherwise).
+  useEffect(() => {
+    lift.value = t.animations ? withSpring(focused ? 1 : 0, t.spring.snappy) : focused ? 1 : 0;
+  }, [focused, lift, t.animations, t.spring.snappy]);
 
   const iconStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: -lift.value * 2 }, { scale: 1 + lift.value * 0.08 }],
