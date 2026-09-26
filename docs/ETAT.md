@@ -71,7 +71,7 @@
 - Durée de trajet uniquement avec un itinéraire réellement calculé.
 
 ### Qualité
-- **175 tests** (vitest) : précisions ±3/5/8/10/12/15/20/30 m × distances
+- **180 tests** (vitest, dont ticket de stationnement) : précisions ±3/5/8/10/12/15/20/30 m × distances
   1/3/8/15/50/100/500 m, cas combinés (12/8, 5/5, 20/15), position instable,
   ancienne, perdue, routing désactivé/actif/hors ligne/sans itinéraire,
   migration de confidentialité, cadrage.
@@ -94,32 +94,29 @@
 | Glisser la voiture | iOS | `draggable` est supporté par Apple Plans, non essayé. |
 | Tout le lot de cette passe | Android | Vérifié par tests et typecheck, pas encore revu sur le téléphone du fondateur. |
 
-## Architectures prêtes (non implémentées)
+## Détails du stationnement (livré)
 
-### Photo de la place (intégration minimale)
-- Dépendances : `expo-image-picker` (prise de vue) + `expo-file-system` (copie).
-- Modèle : `ParkedLocation.photoUri?: string` (`src/types/index.ts`).
-- Stockage local : copie dans `FileSystem.documentDirectory + 'photos/<carId>.jpg'`,
-  jamais d'envoi réseau ; suppression du fichier dans `carStore.remove` et
-  `clearHistory`.
-- Store : `carStore.setPhoto(id, uri | null)` sur le modèle de `setNote`.
-- UI : bouton « Ajouter une photo » dans `SaveConfirmation` à côté de « Ajouter un
-  repère » ; miniature dans la ligne du repère (Retrouver) et dans l'Historique ;
-  appui = plein écran.
-- `app.json` : texte de permission caméra (iOS `NSCameraUsageDescription`).
-- Aucune refonte nécessaire.
+- Après chaque enregistrement, un écran plein « Voiture enregistrée » remplace
+  l'ancienne confirmation : **photo de la place** (appareil photo ou galerie),
+  **repère** (texte + raccourcis Niveau -1/-2, Zone, Place n°, Pilier) et
+  **stationnement payant** (Aucun / 30 min / 1 h / 2 h / 3 h). Rouvrable depuis
+  l'Accueil et Retrouver (ParkingExtras → ParkingDetailsSheet).
+- Photo : copiée dans le dossier privé de l'appli (src/services/photos.ts),
+  jamais envoyée, sans métadonnées EXIF (pas de GPS dans le fichier). Supprimée
+  avec la position (suppression, historique vidé, dépassement des 50 entrées).
+- Ticket : logique pure src/location/meter.ts (fin, temps restant arrondi au
+  supérieur, « bientôt » à 10 min, expiré) ; rappel local 10 min avant la fin
+  (scheduleMeterReminder), annulé si le ticket change, si la position est
+  supprimée ou si une nouvelle voiture est enregistrée. Sans notifications
+  autorisées : minuteur affiché, sans alerte (l'utilisateur est prévenu).
+- Panneaux Accueil / Retrouver : miniature de la photo (appui = plein écran),
+  repère et « Payé jusqu'à 14:30 · reste 32 min ».
 
-### Stationnement payant (sans serveur)
-- Modèle : `ParkingMeter = { carId, startedAt, durationMin, reminderId: string | null }`
-  dans un petit store `src/store/meterStore.ts` persisté (`writeJSON`, comme
-  `carStore`).
-- Rappel : `scheduleParkingReminder(minutes)` et `cancelReminder(id)` existent déjà
-  dans `src/services/notifications.ts` → programmer à fin − 10 min, annuler si
-  prolongé ou arrêté.
-- Logique pure et testable : `src/location/meter.ts` → `remaining(now)`,
-  `isExpired(now)`, `reminderAt()`.
-- UI : ligne « Payé jusqu'à 14:30 · reste 32 min » dans le panneau Retrouver et
-  Accueil ; réglage de durée par `SegmentedControl` (30 min / 1 h / 2 h / perso).
+## Logo
+
+- Source : ssets/brand/logo-source.png. python scripts/make-icons.py retire
+  le faux damier et génère ssets/brand/logo.png (en-tête Accueil),
+  icon.png, daptive-icon.png (zone sûre Android), splash.png, avicon.png.
 
 ## Reste à faire
 
@@ -127,14 +124,13 @@
 |---|---|
 | Haute | Choisir UN nom : « Garée » (README), « VéhiTrack » (appli), `com.garee.app` (identifiant, figé après publication) |
 | Haute | Clé Google Maps Android dans `app.json` pour une version installable hors Expo Go |
-| Moyenne | Photo de la place (architecture ci-dessus) |
-| Moyenne | Minuteur de stationnement payant (architecture ci-dessus) |
 | Moyenne | Serveur d'itinéraires à soi : le serveur OSM public est limité à un usage raisonnable |
 | Moyenne | Enregistrement automatique à la déconnexion du Bluetooth de la voiture (demande un accès en arrière-plan) |
 | Basse | Vérifications iOS (tableau « Non vérifié ») |
 
 ## Journal
 
+- **2026-09-26 (détails du stationnement)** — Photo de la place, repère avec raccourcis, ticket de stationnement payant avec rappel local, logo officiel et icônes de l'appli ; 175 → 180 tests.
 - **2026-09-26 (passe qualité n° 1)** — Services en ligne désactivés par défaut
   (+ migration, + géocodage d'adresse mis derrière un réglage : il envoyait les
   coordonnées sans le dire) ; « Distance estimée » et « Précision de

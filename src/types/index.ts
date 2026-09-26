@@ -1,7 +1,9 @@
 /** Shared domain types for VéhiTrack. */
 
 import type { StabilizationMode } from '@/location/stabilizer';
+import type { ParkingMeter } from '@/location/meter';
 
+export type { ParkingMeter } from '@/location/meter';
 export type { GpsQuality } from '@/location/quality';
 export type { StabilizationMode } from '@/location/stabilizer';
 
@@ -44,6 +46,10 @@ export type ParkedLocation = {
   forced?: boolean;
   /** True when the user moved the pin by hand to the exact spot. */
   adjusted?: boolean;
+  /** Local file (app documents) with a photo of the spot. Never uploaded. */
+  photoUri?: string | null;
+  /** Paid parking period, with its local reminder. */
+  meter?: ParkingMeter | null;
 };
 
 /** A user-defined favourite place. */

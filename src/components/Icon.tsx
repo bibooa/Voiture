@@ -63,7 +63,10 @@ export type IconName =
   | 'school'
   | 'gym'
   | 'restaurant'
-  | 'place';
+  | 'place'
+  | 'camera'
+  | 'image'
+  | 'ticket';
 
 const MAP: Record<IconName, IconDef> = {
   car: { family: 'mci', name: 'car-sports' },
@@ -114,6 +117,9 @@ const MAP: Record<IconName, IconDef> = {
   gym: { family: 'mci', name: 'dumbbell' },
   restaurant: { family: 'mci', name: 'silverware-fork-knife' },
   place: { family: 'mci', name: 'map-marker' },
+  camera: { family: 'ion', name: 'camera-outline' },
+  image: { family: 'ion', name: 'image-outline' },
+  ticket: { family: 'mci', name: 'ticket-outline' },
 };
 
 type Props = {

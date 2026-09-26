@@ -20,6 +20,8 @@ import {
   EmptyState,
   ActionSheet,
   type ActionSheetOption,
+  ParkingDetailsSheet,
+  ParkingExtras,
   qualityColor,
   toneColor,
 } from '@/components';
@@ -61,6 +63,7 @@ export default function FindScreen() {
   const [camHeading, setCamHeading] = useState(0);
   const [mpp, setMpp] = useState(0);
   const [navOptions, setNavOptions] = useState<ActionSheetOption[] | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // One gentle haptic when "probably arrived" is established.
   const wasArrived = useRef(false);
@@ -262,14 +265,7 @@ export default function FindScreen() {
             </View>
           ) : null}
 
-          {car.note ? (
-            <View style={[styles.note, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}>
-              <Icon name="floor" size={14} color={t.colors.primary} />
-              <AppText variant="caption" weight="medium" style={{ marginLeft: 8, flex: 1 }} numberOfLines={2}>
-                {car.note}
-              </AppText>
-            </View>
-          ) : null}
+          <ParkingExtras car={car} now={now} onEdit={() => setDetailsOpen(true)} />
 
           <View style={styles.actions}>
             <PrimaryButton label="ME GUIDER" icon="compass" onPress={openGuide} style={{ flex: 1 }} />
@@ -293,6 +289,7 @@ export default function FindScreen() {
         options={navOptions ?? []}
         onClose={() => setNavOptions(null)}
       />
+      {detailsOpen ? <ParkingDetailsSheet carId={car.id} mode="edit" onClose={() => setDetailsOpen(false)} /> : null}
     </View>
   );
 }

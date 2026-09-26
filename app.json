@@ -54,6 +54,14 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "VéhiTrack utilise l'appareil photo uniquement pour photographier votre place de stationnement. La photo reste sur votre téléphone.",
+          "photosPermission": "VéhiTrack accède à vos photos uniquement si vous choisissez une photo de votre place. Elle reste sur votre téléphone.",
+          "microphonePermission": false
+        }
+      ],
+      [
         "expo-notifications",
         {
           "color": "#5B8CFF"

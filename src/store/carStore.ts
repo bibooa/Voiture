@@ -2,8 +2,19 @@ import { create } from 'zustand';
 import type { ParkedLocation } from '@/types';
 import { StorageKeys, readJSON, writeJSON } from '@/services/storage';
 import { makeId } from '@/utils/id';
+import { deletePhoto } from '@/services/photos';
+import { cancelReminder } from '@/services/notifications';
+import type { ParkingMeter } from '@/location/meter';
 
 const HISTORY_LIMIT = 50;
+
+/** Records leaving the app take their photo file and pending reminder with them. */
+function discard(records: ParkedLocation[]) {
+  for (const r of records) {
+    deletePhoto(r.photoUri);
+    if (r.meter?.reminderId) cancelReminder(r.meter.reminderId);
+  }
+}
 /** Placement error (m) of a pin dragged by hand onto the right spot. */
 export const MANUAL_ACCURACY = 3;
 
@@ -31,6 +42,10 @@ type CarState = {
   rename: (id: string, label: string) => void;
   /** The user dragged the car pin to the exact spot on the map. */
   moveCar: (id: string, latitude: number, longitude: number) => void;
+  /** Attach / replace / remove the photo of the spot (old file is deleted). */
+  setPhoto: (id: string, uri: string | null) => void;
+  /** Set or clear the paid-parking period (see services/parkingMeter). */
+  setMeter: (id: string, meter: ParkingMeter | null) => void;
   /** Set an optional detail note (parking floor, zone, spot number…). */
   setNote: (id: string, note: string) => void;
   remove: (id: string) => void;
@@ -70,7 +85,12 @@ export const useCarStore = create<CarState>((set, get) => ({
       savedAt: Date.now(),
       address: null,
     };
-    const history = [record, ...get().history].slice(0, HISTORY_LIMIT);
+    // Parked elsewhere now: the previous ticket's reminder no longer applies.
+    const prevReminder = get().current?.meter?.reminderId;
+    if (prevReminder) cancelReminder(prevReminder);
+    const all = [record, ...get().history];
+    discard(all.slice(HISTORY_LIMIT));
+    const history = all.slice(0, HISTORY_LIMIT);
     set({ current: record, history });
     persist({ current: record, history });
     return record;
@@ -104,6 +124,22 @@ export const useCarStore = create<CarState>((set, get) => ({
     persist({ current, history });
   },
 
+  setPhoto: (id, uri) => {
+    const old = get().history.find((h) => h.id === id)?.photoUri;
+    if (old && old !== uri) deletePhoto(old);
+    const history = get().history.map((h) => (h.id === id ? { ...h, photoUri: uri } : h));
+    const current = get().current?.id === id ? { ...get().current!, photoUri: uri } : get().current;
+    set({ history, current });
+    persist({ current, history });
+  },
+
+  setMeter: (id, meter) => {
+    const history = get().history.map((h) => (h.id === id ? { ...h, meter } : h));
+    const current = get().current?.id === id ? { ...get().current!, meter } : get().current;
+    set({ history, current });
+    persist({ current, history });
+  },
+
   setNote: (id, note) => {
     const history = get().history.map((h) => (h.id === id ? { ...h, note } : h));
     const current =
@@ -113,6 +149,8 @@ export const useCarStore = create<CarState>((set, get) => ({
   },
 
   remove: (id) => {
+    const gone = get().history.find((h) => h.id === id);
+    discard(gone ? [gone] : []);
     const history = get().history.filter((h) => h.id !== id);
     const current =
       get().current?.id === id ? history[0] ?? null : get().current;
@@ -121,6 +159,7 @@ export const useCarStore = create<CarState>((set, get) => ({
   },
 
   clearHistory: () => {
+    discard(get().history);
     set({ history: [], current: null });
     persist({ current: null, history: [] });
   },

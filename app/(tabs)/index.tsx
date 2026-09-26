@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { View, StyleSheet, Pressable, Linking, type LayoutChangeEvent } from 'react-native';
+import { View, StyleSheet, Pressable, Linking, Image, type LayoutChangeEvent } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,8 +16,8 @@ import {
   PrimaryButton,
   GlassButton,
   StabilizationOverlay,
-  SaveConfirmation,
-  PromptModal,
+  ParkingDetailsSheet,
+  ParkingExtras,
   qualityColor,
 } from '@/components';
 import { useTheme } from '@/theme';
@@ -25,13 +25,13 @@ import { useLocationProfile } from '@/hooks/useLocationProfile';
 import { useCarGuidance } from '@/hooks/useCarGuidance';
 import { useNow } from '@/hooks/useNow';
 import { useSaveCar } from '@/hooks/useSaveCar';
-import { useCarStore } from '@/store/carStore';
 import { useLocationStore } from '@/store/locationStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { timeAgo } from '@/utils/time';
 import { APP_NAME } from '@/constants';
 
 const TAB_BAR_SPACE = 84;
+const LOGO = require('../../assets/brand/logo.png');
 
 export default function HomeScreen() {
   const t = useTheme();
@@ -43,12 +43,11 @@ export default function HomeScreen() {
   const now = useNow(2000);
   const g = useCarGuidance(now);
   const error = useLocationStore((s) => s.error);
-  const setNote = useCarStore((s) => s.setNote);
   const mapType = useSettingsStore((s) => s.mapType);
   const save = useSaveCar();
 
   const [cardH, setCardH] = useState(260);
-  const [noteFor, setNoteFor] = useState<string | null>(null);
+  const [details, setDetails] = useState<{ id: string; mode: 'saved' | 'edit' } | null>(null);
   const [camHeading, setCamHeading] = useState(0);
 
   const headerH = insets.top + 46;
@@ -73,9 +72,7 @@ export default function HomeScreen() {
         style={[styles.fade, { height: headerH + 40 }]}
       />
       <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <LinearGradient colors={t.colors.primaryGradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.logo}>
-          <Icon name="pin" size={15} color="#fff" />
-        </LinearGradient>
+        <Image source={LOGO} style={styles.logo} accessibilityIgnoresInvertColors />
         <AppText variant="callout" weight="bold" style={{ flex: 1, marginLeft: 9 }}>
           {APP_NAME}
         </AppText>
@@ -144,17 +141,7 @@ export default function HomeScreen() {
 
               <DistanceSummary g={g} />
 
-              {car.note ? (
-                <Pressable
-                  onPress={() => setNoteFor(car.id)}
-                  style={[styles.note, { backgroundColor: t.colors.glass, borderColor: t.colors.glassBorder }]}
-                >
-                  <Icon name="floor" size={14} color={t.colors.primary} />
-                  <AppText variant="caption" weight="medium" numberOfLines={1} style={{ marginLeft: 8, flex: 1 }}>
-                    {car.note}
-                  </AppText>
-                </Pressable>
-              ) : null}
+              <ParkingExtras car={car} now={now} onEdit={() => setDetails({ id: car.id, mode: 'edit' })} />
 
               <PrimaryButton label="RETROUVER MA VOITURE" icon="navigate" onPress={() => router.push('/find')} style={{ marginTop: 12 }} />
               <Pressable onPress={save.start} style={styles.textBtn} hitSlop={6}>
@@ -189,29 +176,12 @@ export default function HomeScreen() {
           onSaveAnyway={save.saveAnyway}
         />
       ) : null}
+      {/* Right after saving: photo, spot marker and paid-parking timer in one place. */}
       {save.phase === 'saved' && save.saved ? (
-        <SaveConfirmation
-          record={save.saved}
-          onDone={save.dismiss}
-          onAddNote={() => {
-            const id = save.saved!.id;
-            save.dismiss();
-            setNoteFor(id);
-          }}
-        />
+        <ParkingDetailsSheet carId={save.saved.id} mode="saved" onClose={save.dismiss} />
+      ) : details ? (
+        <ParkingDetailsSheet carId={details.id} mode={details.mode} onClose={() => setDetails(null)} />
       ) : null}
-
-      <PromptModal
-        visible={!!noteFor}
-        title="Repère de stationnement"
-        placeholder="Ex. Niveau -2, zone B, place 114"
-        initialValue={car?.id === noteFor ? car?.note ?? '' : ''}
-        onCancel={() => setNoteFor(null)}
-        onConfirm={(value) => {
-          if (noteFor) setNote(noteFor, value);
-          setNoteFor(null);
-        }}
-      />
     </View>
   );
 }
@@ -294,7 +264,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   fade: { position: 'absolute', top: 0, left: 0, right: 0 },
   header: { position: 'absolute', left: 0, right: 0, top: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16 },
-  logo: { width: 28, height: 28, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  logo: { width: 30, height: 30 },
   iconBtn: {
     width: 32,
     height: 32,

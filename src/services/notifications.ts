@@ -87,6 +87,31 @@ export async function scheduleParkingReminder(
   }
 }
 
+/** Local reminder before a paid-parking period ends. Returns its id, or null (no permission / error). */
+export async function scheduleMeterReminder(inMinutes: number, endClock: string, minutesLeft: number): Promise<string | null> {
+  try {
+    const N = getNotifications();
+    const ok = await requestNotificationPermission();
+    if (!ok) return null;
+    configureHandler(N);
+    await ensureAndroidChannel(N);
+    return await N.scheduleNotificationAsync({
+      content: {
+        title: `Stationnement payé : plus que ${minutesLeft} min`,
+        body: `Votre ticket se termine à ${endClock}. Ouvrez VéhiTrack pour retrouver votre voiture.`,
+        sound: true,
+      },
+      trigger: {
+        type: N.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: Math.max(60, Math.round(inMinutes * 60)),
+        channelId: CHANNEL_ID,
+      },
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function cancelReminder(id: string): Promise<void> {
   try {
     await getNotifications().cancelScheduledNotificationAsync(id);
