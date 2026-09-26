@@ -118,12 +118,28 @@
   le faux damier et génère ssets/brand/logo.png (en-tête Accueil),
   icon.png, daptive-icon.png (zone sûre Android), splash.png, avicon.png.
 
+## Publication Play Store (préparée)
+
+- Nom **VéhiTrack**, identifiant **com.vehitrack.app** (définitif), versionCode géré
+  par EAS (utoIncrement).
+- Permissions bloquées : localisation en arrière-plan, micro, stockage externe,
+  superposition. Demandées : localisation pendant l'utilisation, appareil photo,
+  notifications.
+- Clé Google Maps Android : jamais dans le dépôt, injectée par pp.config.js
+  depuis la variable EAS GOOGLE_MAPS_ANDROID_KEY.
+- eas.json : preview (APK à installer pour tester), production (AAB pour le Store).
+- Politique de confidentialité : https://bibooa.github.io/Voiture/privacy/
+  (GitHub Pages, dossier docs/).
+- Fiche complète, formulaire « Sécurité des données », classification, message aux
+  testeurs : store/FICHE-PLAY-STORE.md. Visuels : store/icon-512.png,
+  store/feature-graphic.png (python scripts/make-store-assets.py).
+- Reste au fondateur : compte Play Console, compte Expo, clé Maps, captures,
+  12 testeurs × 14 jours.
 ## Reste à faire
 
 | Priorité | Sujet |
 |---|---|
-| Haute | Choisir UN nom : « Garée » (README), « VéhiTrack » (appli), `com.garee.app` (identifiant, figé après publication) |
-| Haute | Clé Google Maps Android dans `app.json` pour une version installable hors Expo Go |
+| Haute | Créer la clé Google Maps Android et la déclarer dans EAS (voir « Publication »)
 | Moyenne | Serveur d'itinéraires à soi : le serveur OSM public est limité à un usage raisonnable |
 | Moyenne | Enregistrement automatique à la déconnexion du Bluetooth de la voiture (demande un accès en arrière-plan) |
 | Basse | Vérifications iOS (tableau « Non vérifié ») |
