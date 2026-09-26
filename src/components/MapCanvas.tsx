@@ -42,6 +42,16 @@ type Props = {
 };
 
 
+/** Real-scale accuracy zone: ~5 % at the edge, ~10 % in the core. */
+function AccuracyZone({ center, radius, color }: { center: LatLng; radius: number; color: string }) {
+  return (
+    <>
+      <Circle center={center} radius={radius} strokeColor={color + '47'} fillColor={color + '0D'} strokeWidth={1} />
+      <Circle center={center} radius={radius * 0.55} strokeColor="transparent" fillColor={color + '0D'} strokeWidth={0} />
+    </>
+  );
+}
+
 const FALLBACK: Region = { latitude: 48.8566, longitude: 2.3522, latitudeDelta: 0.02, longitudeDelta: 0.02 };
 
 /**
@@ -229,27 +239,10 @@ export const MapCanvas = forwardRef<MapCanvasHandle, Props>(function MapCanvas(
         }
       }}
     >
-      {/* Accuracy of the saved car position */}
-      {car && car.accuracy ? (
-        <Circle
-          center={car}
-          radius={car.accuracy}
-          strokeColor={t.colors.car + '5C'}
-          fillColor={t.colors.car + '12'}
-          strokeWidth={1}
-        />
-      ) : null}
-
-      {/* Accuracy of the live user position */}
-      {user && user.accuracy ? (
-        <Circle
-          center={user}
-          radius={user.accuracy}
-          strokeColor={t.colors.primary + '5C'}
-          fillColor={t.colors.primary + '14'}
-          strokeWidth={1}
-        />
-      ) : null}
+      {/* Accuracy circles at their real radius: faint fill, fine edge, and a
+          second inner layer so the zone fades out towards its border. */}
+      {car && car.accuracy ? <AccuracyZone center={car} radius={car.accuracy} color={t.colors.car} /> : null}
+      {user && user.accuracy ? <AccuracyZone center={user} radius={user.accuracy} color={t.colors.primary} /> : null}
 
       {hasRoute ? (
         <>

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { computeGuidance, stepArrival, INITIAL_ARRIVAL, arrivalRadius, type ArrivalMemory } from '@/location/guidance';
+import {
+  computeGuidance,
+  stepArrival,
+  INITIAL_ARRIVAL,
+  arrivalRadius,
+  canConfirmArrival,
+  type ArrivalMemory,
+} from '@/location/guidance';
 import { presentGuidance, type PresentInput } from '@/location/presentation';
 import { gpsQuality } from '@/location/quality';
 import { offsetMeters } from '@/utils/geo';
@@ -48,7 +55,12 @@ describe('Consistency across accuracies ±3 / ±5 / ±10 / ±15 / ±30 m', () =>
         expect(view.routeText).toBeNull();
 
         const R = arrivalRadius(U);
-        if (d <= R) {
+        if (d <= R && !canConfirmArrival(U)) {
+          // GPS too poor to confirm anything: no arrival, radius stated.
+          expect(view.headline).toBe('Votre voiture est dans les environs');
+          expect(view.detail).toContain(`${U} m`);
+          expect(view.arrowMode).toBe('none');
+        } else if (d <= R) {
           expect(view.headline).toBe('Vous êtes probablement arrivé');
           expect(view.detail).toContain(`${R} m`);
           expect(view.arrowMode).toBe('arrived');
@@ -76,6 +88,15 @@ describe('Consistency across accuracies ±3 / ±5 / ±10 / ±15 / ±30 m', () =>
     expect(view.headline).toBe('Vous êtes probablement arrivé');
     expect(view.detail).toBe('Votre voiture se trouve probablement dans un rayon d’environ 15 m.');
     expect(view.directionText).toBeNull();
+  });
+});
+
+describe('Arrival needs a usable uncertainty', () => {
+  it('±30 m: never "probably arrived", even 2 m away', () => {
+    for (const s of [0, 3, 10]) expect(scenario(30, 2, s).view.headline).toBe('Votre voiture est dans les environs');
+  });
+  it('unknown uncertainty never confirms arrival', () => {
+    expect(stepArrival(stepArrival(INITIAL_ARRIVAL, 1, null, 0), 1, null, 5000).state).toBe('near');
   });
 });
 

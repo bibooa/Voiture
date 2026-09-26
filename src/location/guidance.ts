@@ -40,13 +40,26 @@ export const ARRIVAL_HYSTERESIS = 6;
 /** Beyond the arrival radius + this, we are no longer "near". */
 export const NEAR_MARGIN = 25;
 
+/**
+ * Beyond this combined uncertainty the GPS cannot confirm an arrival at all:
+ * at ±43 m, "probably arrived" could be said 40 m from the car. We stay at
+ * "near" and state the radius instead.
+ */
+export const MAX_ARRIVAL_RADIUS = 20;
+
 export function arrivalRadius(uncertainty: number | null): number {
   return Math.max(MIN_ARRIVAL_RADIUS, uncertainty ?? 20);
 }
 
+/** Whether the GPS is precise enough to ever declare "probably arrived". */
+export function canConfirmArrival(uncertainty: number | null): boolean {
+  return uncertainty != null && arrivalRadius(uncertainty) <= MAX_ARRIVAL_RADIUS;
+}
+
 /**
  * Arrival with hysteresis. Being within the uncertainty radius means the car is
- * *probably* here — we never state it as certain.
+ * *probably* here — we never state it as certain, and never at all when the
+ * uncertainty is too large (or unknown) to mean anything.
  */
 export function computeArrival(
   distance: number,
@@ -54,6 +67,7 @@ export function computeArrival(
   previous: ArrivalState = 'far'
 ): ArrivalState {
   const r = arrivalRadius(uncertainty);
+  if (!canConfirmArrival(uncertainty)) return distance <= r + NEAR_MARGIN ? 'near' : 'far';
   if (previous === 'probably-arrived' && distance <= r + ARRIVAL_HYSTERESIS) return 'probably-arrived';
   if (distance <= r) return 'probably-arrived';
   if (distance <= r + NEAR_MARGIN) return 'near';

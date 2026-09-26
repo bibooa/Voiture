@@ -14,7 +14,7 @@
  */
 
 import { compassFromBearing, formatDistance, formatDuration } from '@/utils/geo';
-import { arrivalRadius, type ArrivalState, type Guidance } from './guidance';
+import { arrivalRadius, canConfirmArrival, type ArrivalState, type Guidance } from './guidance';
 import type { CompassReliability } from './heading';
 import { formatAccuracy, gpsQuality, type GpsQuality, type QualityTone } from './quality';
 
@@ -120,6 +120,11 @@ export function presentGuidance(i: PresentInput): GuidanceView {
     headline = 'Vous êtes probablement arrivé';
     detail = `Votre voiture se trouve probablement dans un rayon d’environ ${arrivalRadius(u)} m.`;
     headlineTone = 'success';
+  } else if (g && near && noDirection && !canConfirmArrival(u)) {
+    // Inside a radius too large to confirm anything: say so, with the radius.
+    headline = 'Votre voiture est dans les environs';
+    headlineTone = 'accent';
+    detail = `Elle se trouve probablement dans un rayon d’environ ${u ?? '?'} m. GPS trop imprécis ici pour confirmer l’arrivée.`;
   } else if (g && near) {
     headline = 'Votre voiture est tout près';
     headlineTone = 'accent';
